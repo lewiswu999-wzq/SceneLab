@@ -131,9 +131,6 @@ export function StoryboardVariantComparison({
                   </div>
                   <PromptExpertPreview
                     finalPrompt={variant.promptExpert?.finalPrompt ?? variant.prompt}
-                    storyboardPrompt={variant.promptExpert?.storyboardPrompt}
-                    stylePrompt={variant.promptExpert?.stylePrompt}
-                    notes={variant.promptExpert?.fusionNotes}
                   />
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-200" onClick={() => selectVariant(variant.id)}>
@@ -161,14 +158,8 @@ export function StoryboardVariantComparison({
 
 function PromptExpertPreview({
   finalPrompt,
-  storyboardPrompt,
-  stylePrompt,
-  notes,
 }: {
   finalPrompt: string
-  storyboardPrompt?: string
-  stylePrompt?: string
-  notes?: string[]
 }) {
   return (
     <div className="grid gap-2 rounded-md border border-teal-300/15 bg-teal-300/[0.04] p-3">
@@ -179,36 +170,6 @@ function PromptExpertPreview({
         </div>
       </div>
       <p className="line-clamp-6 whitespace-pre-wrap text-xs leading-5 text-zinc-300">{finalPrompt}</p>
-      {(storyboardPrompt || stylePrompt || notes?.length) && (
-        <details className="group grid gap-2 text-xs text-zinc-400">
-          <summary className="cursor-pointer list-none text-teal-200 outline-none group-open:mb-2">
-            查看两个来源 prompt 与融合 notes
-          </summary>
-          {storyboardPrompt && (
-            <PromptSourceBlock title="AI Video Storyboard pass" value={storyboardPrompt} />
-          )}
-          {stylePrompt && (
-            <PromptSourceBlock title="Style variant pass" value={stylePrompt} />
-          )}
-          {notes?.length ? (
-            <div className="grid gap-1 rounded border border-white/10 bg-black/20 p-2">
-              <div className="text-[11px] font-medium text-zinc-300">Prompt Master fusion notes</div>
-              {notes.map((note) => (
-                <div key={note} className="leading-5 text-zinc-500">{note}</div>
-              ))}
-            </div>
-          ) : null}
-        </details>
-      )}
-    </div>
-  )
-}
-
-function PromptSourceBlock({ title, value }: { title: string; value: string }) {
-  return (
-    <div className="grid gap-1 rounded border border-white/10 bg-black/20 p-2">
-      <div className="text-[11px] font-medium text-zinc-300">{title}</div>
-      <p className="line-clamp-5 whitespace-pre-wrap leading-5 text-zinc-500">{value}</p>
     </div>
   )
 }
