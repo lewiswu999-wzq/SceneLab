@@ -22,7 +22,37 @@ import type {
 } from "@/lib/types"
 
 const ratios: StoryboardImageRequest["aspectRatio"][] = ["16:9", "9:16", "1:1", "4:3", "21:9"]
-const styles = ["cinematic-realism", "cold-suspense", "warm-realism", "neon-noir", "documentary", "dreamlike"]
+type PromptStyleOption = {
+  value: "realistic" | "cartoon" | "custom"
+  label: string
+  description: string
+  stylePreset: string
+  promptStyle: string
+}
+
+const promptStyleOptions: PromptStyleOption[] = [
+  {
+    value: "realistic",
+    label: "真实风",
+    description: "偏电影写实、真实表演和自然材质。",
+    stylePreset: "realistic-film",
+    promptStyle: "真实电影写实风：自然光影、真实表演、真实材质、摄影机镜头语言，避免卡通化和过度插画化。",
+  },
+  {
+    value: "cartoon",
+    label: "卡通风",
+    description: "偏动画电影、清晰线条和更鲜明的造型。",
+    stylePreset: "cartoon-animation",
+    promptStyle: "卡通动画风：清晰线条、动画电影色彩、适度夸张但稳定的表情和形体，保持角色身份一致，避免写实摄影质感。",
+  },
+  {
+    value: "custom",
+    label: "其他风格",
+    description: "输入你自己的风格方向。",
+    stylePreset: "custom-style",
+    promptStyle: "自定义视觉风格：按用户输入的风格方向生成，同时保持分镜、角色身份和镜头连续性。",
+  },
+]
 const statusText = {
   idle: "就绪",
   generating: "生成中",
@@ -52,14 +82,21 @@ export function StoryboardImageGenerator({
   const shot = analysis.shotSuggestions.find((item) => item.sceneId === scene.id) ?? analysis.shotSuggestions[0]
   const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("jimeng")
   const [aspectRatio, setAspectRatio] = useState<StoryboardImageRequest["aspectRatio"]>("16:9")
-  const [stylePreset, setStylePreset] = useState("cinematic-realism")
+  const [promptStyle, setPromptStyle] = useState<PromptStyleOption["value"]>("realistic")
+  const [customStyle, setCustomStyle] = useState("")
   const [status, setStatus] = useState<"idle" | "generating" | "failed">("idle")
+  const selectedPromptStyle = promptStyleOptions.find((option) => option.value === promptStyle) ?? promptStyleOptions[0]
+  const resolvedPromptStyle =
+    promptStyle === "custom" && customStyle.trim()
+      ? `自定义视觉风格：${customStyle.trim()}。保持分镜、角色身份和镜头连续性。`
+      : selectedPromptStyle.promptStyle
+  const stylePreset = promptStyle === "custom" && customStyle.trim() ? `custom-${customStyle.trim()}` : selectedPromptStyle.stylePreset
   const basePrompt = useMemo(() => {
     const characterPrompt = consistencyPack
       ? `\n角色一致性：\n${buildCharacterConsistencyPrompt(consistencyPack.profiles, scene.characters)}`
       : ""
-    return `${buildStoryboardImagePrompt(scene, shot, analysis.characters, stylePreset, provider)}${characterPrompt}`
-  }, [analysis.characters, consistencyPack, provider, scene, shot, stylePreset])
+    return `${buildStoryboardImagePrompt(scene, shot, analysis.characters, resolvedPromptStyle, provider)}${characterPrompt}`
+  }, [analysis.characters, consistencyPack, provider, resolvedPromptStyle, scene, shot])
   const [customPrompt, setCustomPrompt] = useState("")
   const prompt = customPrompt || basePrompt
 
@@ -119,8 +156,28 @@ export function StoryboardImageGenerator({
         <div className="grid gap-3 md:grid-cols-3">
           <ProviderSelect value={provider} onChange={setProvider} />
           <NativeSelect label="画幅" value={aspectRatio} options={ratios} onChange={(value) => setAspectRatio(value as StoryboardImageRequest["aspectRatio"])} />
-          <NativeSelect label="视觉风格" value={stylePreset} options={styles} onChange={setStylePreset} />
+          <PromptStyleSelect
+            value={promptStyle}
+            onChange={(value) => {
+              setPromptStyle(value)
+              setCustomPrompt("")
+            }}
+          />
         </div>
+        {promptStyle === "custom" && (
+          <Field>
+            <FieldLabel className="text-zinc-100">其他风格</FieldLabel>
+            <Textarea
+              value={customStyle}
+              onChange={(event) => setCustomStyle(event.target.value)}
+              placeholder="例如：水彩绘本、赛博朋克、黏土动画、国风水墨、低多边形 3D..."
+              className="min-h-20 border-white/10 bg-black/30 text-sm leading-6 text-zinc-200"
+            />
+          </Field>
+        )}
+        <p className="text-xs leading-5 text-zinc-500">
+          Prompt 风格：{selectedPromptStyle.description}
+        </p>
         <p className="text-xs text-zinc-500">
           {visualProviderOptions.find((option) => option.value === provider)?.description}
         </p>
@@ -138,11 +195,34 @@ export function StoryboardImageGenerator({
           </p>
           <Button onClick={generate} disabled={status === "generating"} className="bg-teal-300 text-zinc-950 hover:bg-teal-200">
             {status === "generating" ? <Loader2Icon className="animate-spin" data-icon="inline-start" /> : <ImageIcon data-icon="inline-start" />}
-            生成分镜图
+            生成效果图和 Prompt
           </Button>
         </div>
       </div>
     </section>
+  )
+}
+
+function PromptStyleSelect({
+  value,
+  onChange,
+}: {
+  value: PromptStyleOption["value"]
+  onChange: (value: PromptStyleOption["value"]) => void
+}) {
+  return (
+    <Field>
+      <FieldLabel className="text-zinc-100">Prompt 风格</FieldLabel>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as PromptStyleOption["value"])}
+        className="h-8 rounded-lg border border-white/10 bg-zinc-950 px-2 text-sm text-zinc-100 outline-none focus:border-teal-300/60"
+      >
+        {promptStyleOptions.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </Field>
   )
 }
 
