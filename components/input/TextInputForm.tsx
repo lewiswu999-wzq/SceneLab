@@ -104,7 +104,7 @@ export function TextInputForm() {
 
       const payload = (await response.json()) as {
         analysis: SceneAnalysis
-        source: "deepseek" | "mock"
+        source: "text-api" | "mock"
         fallbackReason?: string
       }
 
@@ -116,10 +116,10 @@ export function TextInputForm() {
         })
       )
 
-      if (payload.source === "deepseek") {
-        toast.success("DeepSeek V3 分析完成")
+      if (payload.source === "text-api") {
+        toast.success("文字流分析完成")
       } else {
-        toast.warning(`已使用本地 mock fallback：${payload.fallbackReason ?? "未配置 DeepSeek"}`)
+        toast.warning(`已使用本地 mock fallback：${payload.fallbackReason ?? "未配置文字流 API"}`)
       }
 
       router.push("/analysis")
@@ -148,7 +148,7 @@ export function TextInputForm() {
             placeholder="粘贴小说、剧本、短剧文案或故事梗概..."
           />
           <FieldDescription>
-            优先调用服务端 DeepSeek V3；未配置 API key 或请求失败时自动回退到本地 mock。
+            优先调用“API 接入”中的文字流；未配置或请求失败时自动回退到本地 mock。
           </FieldDescription>
           <FieldError errors={[form.formState.errors.sourceText]} />
         </Field>
@@ -217,7 +217,7 @@ export function TextInputForm() {
           ) : (
             <FlaskConicalIcon data-icon="inline-start" />
           )}
-          {form.formState.isSubmitting ? "DeepSeek 分析中" : "开始分析"}
+          {form.formState.isSubmitting ? "文字流分析中" : "开始分析"}
           {!form.formState.isSubmitting && <ArrowRightIcon data-icon="inline-end" />}
         </Button>
       </div>

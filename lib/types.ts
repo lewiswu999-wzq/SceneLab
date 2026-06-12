@@ -188,6 +188,7 @@ export type EditableAgentRunResult = RevisedAgentRunResult & {
 
 export type VisualGenerationProvider =
   | "mock"
+  | "image-api"
   | "jimeng"
   | "image2"
   | "kling"

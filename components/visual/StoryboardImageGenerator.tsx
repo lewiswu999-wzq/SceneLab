@@ -83,7 +83,7 @@ export function StoryboardImageGenerator({
 }: StoryboardImageGeneratorProps) {
   const scene = analysis.scenes.find((item) => item.id === sceneId) ?? analysis.scenes[0]
   const shot = analysis.shotSuggestions.find((item) => item.sceneId === scene.id) ?? analysis.shotSuggestions[0]
-  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("jimeng")
+  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("image-api")
   const [aspectRatio, setAspectRatio] = useState<StoryboardImageRequest["aspectRatio"]>("16:9")
   const [promptStyle, setPromptStyle] = useState<PromptStyleOption["value"]>("realistic")
   const [customStyle, setCustomStyle] = useState("")

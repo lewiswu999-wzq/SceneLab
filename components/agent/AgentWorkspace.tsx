@@ -123,7 +123,7 @@ const featureIntros: Record<
   visualStoryboard: {
     icon: ImageIcon,
     title: "视觉分镜",
-    description: "把场景、角色、镜头建议、分镜规范和角色一致性规则合成分镜图 Prompt，可调用已接入的即梦 API，或生成不联网的本地 SVG 预览。",
+    description: "把场景、角色、镜头建议、分镜规范和角色一致性规则合成分镜图 Prompt，可调用已配置的图像流 API，或生成不联网的本地 SVG 预览。",
     details: ["相同 Prompt 会复用已有结果，避免重复消耗额度。", "默认保持同一演员和同一角色形象连续。", "分镜 Prompt 会考虑轴线、动作匹配、视线匹配和画面方向。"],
   },
   visualVariants: {
@@ -147,7 +147,7 @@ const featureIntros: Record<
   conceptPoster: {
     icon: PaletteIcon,
     title: "概念海报",
-    description: "从故事概览、角色一致性和关键场景生成概念海报 Prompt，可调用已接入的即梦 API，或生成不联网的本地 SVG 预览。",
+    description: "从故事概览、角色一致性和关键场景生成概念海报 Prompt，可调用已配置的图像流 API，或生成不联网的本地 SVG 预览。",
     details: ["同类型同 Prompt 会复用已有海报。", "可选择参与海报的场景和角色。", "适合做项目第一视觉和风格探索。"],
   },
   storyboardReel: {

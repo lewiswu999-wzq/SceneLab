@@ -42,7 +42,7 @@ export function ConceptPosterGenerator({
   onReuse,
 }: ConceptPosterGeneratorProps) {
   const [posterType, setPosterType] = useState<PosterType>("main-poster")
-  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("jimeng")
+  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("image-api")
   const [aspectRatio, setAspectRatio] = useState<(typeof ratios)[number]>("16:9")
   const [visualStyle, setVisualStyle] = useState(lockedStyle?.label ?? analysis.meta.style)
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>(analysis.scenes.slice(0, 2).map((scene) => scene.id))
@@ -118,7 +118,7 @@ export function ConceptPosterGenerator({
           <PaletteIcon />
           概念海报
         </CardTitle>
-        <CardDescription>选择场景与角色，通过已接入的即梦 API 生成海报，或使用不联网的本地 SVG 预览。</CardDescription>
+        <CardDescription>选择场景与角色，通过图像流 API 生成海报，或使用不联网的本地 SVG 预览。</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-3 md:grid-cols-4">

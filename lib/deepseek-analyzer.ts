@@ -1,7 +1,8 @@
-import OpenAI from "openai"
-
 import { analyzeText } from "@/lib/mock-analyzer"
-import type { ServerProviderSettings } from "@/lib/server-api-settings"
+import {
+  joinApiEndpoint,
+  type ServerProviderSettings,
+} from "@/lib/server-api-settings"
 import type {
   Character,
   Relationship,
@@ -179,7 +180,7 @@ function parseJSONContent(content: string) {
   } catch {
     const match = content.match(/\{[\s\S]*\}/)
     if (!match) {
-      throw new Error("DeepSeek did not return JSON content.")
+      throw new Error("文字流没有返回 JSON 内容。")
     }
     return JSON.parse(match[0])
   }
@@ -190,7 +191,15 @@ export async function analyzeTextWithDeepSeek(
   clientSettings: ServerProviderSettings = {}
 ) {
   const apiKey = clientSettings.apiKey || process.env.DEEPSEEK_API_KEY
-  const model = clientSettings.model || process.env.DEEPSEEK_MODEL || DEFAULT_DEEPSEEK_MODEL
+  const baseUrl =
+    clientSettings.baseUrl ||
+    process.env.DEEPSEEK_BASE_URL ||
+    "https://api.deepseek.com"
+  const model =
+    clientSettings.model ||
+    process.env.DEEPSEEK_MODEL ||
+    DEFAULT_DEEPSEEK_MODEL
+  const apiPath = clientSettings.apiPath || "/chat/completions"
 
   if (!apiKey) {
     const analysis = analyzeText(input)
@@ -201,52 +210,63 @@ export async function analyzeTextWithDeepSeek(
           ...analysis.meta,
           provider: "mock",
           model: "local-mock",
-          fallbackReason: "Missing DEEPSEEK_API_KEY",
+          fallbackReason: "Missing text stream API key",
         },
       },
       source: "mock" as const,
-      fallbackReason: "Missing DEEPSEEK_API_KEY",
+      fallbackReason: "Missing text stream API key",
     }
   }
 
-  const client = new OpenAI({
-    apiKey,
-    baseURL:
-      clientSettings.baseUrl ||
-      process.env.DEEPSEEK_BASE_URL ||
-      "https://api.deepseek.com",
-  })
-
   try {
-    const completion = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: JSON.stringify({
-            task: "分析这段影视文本并返回 SceneAnalysis JSON",
-            input,
-          }),
+    const response = await fetch(
+      joinApiEndpoint(baseUrl, apiPath, "/chat/completions"),
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.35,
-      max_tokens: 5000,
-      stream: false,
-    })
-    const content = completion.choices[0]?.message?.content
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: JSON.stringify({
+                task: "分析这段影视文本并返回 SceneAnalysis JSON",
+                input,
+              }),
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.35,
+          max_tokens: 5000,
+          stream: false,
+        }),
+      }
+    )
+    const completion = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+      error?: { message?: string }
+    }
+    if (!response.ok) {
+      throw new Error(
+        completion.error?.message ?? `Text stream returned HTTP ${response.status}.`
+      )
+    }
+    const content = completion.choices?.[0]?.message?.content
     if (!content) {
-      throw new Error("DeepSeek response is empty.")
+      throw new Error("Text stream response is empty.")
     }
 
     return {
-      analysis: normalizeAnalysis(parseJSONContent(content), input, "deepseek", model),
-      source: "deepseek" as const,
+      analysis: normalizeAnalysis(parseJSONContent(content), input, "text-api", model),
+      source: "text-api" as const,
     }
   } catch (error) {
     const analysis = analyzeText(input)
-    const fallbackReason = error instanceof Error ? error.message : "DeepSeek request failed."
+    const fallbackReason = error instanceof Error ? error.message : "Text stream request failed."
 
     return {
       analysis: {

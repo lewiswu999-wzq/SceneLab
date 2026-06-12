@@ -39,7 +39,7 @@ export function StoryboardVariantComparison({
   onChange,
 }: StoryboardVariantComparisonProps) {
   const [sceneId, setSceneId] = useState(analysis.scenes[0]?.id ?? "")
-  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("jimeng")
+  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("image-api")
   const [loading, setLoading] = useState(false)
   const currentSet = comparisonSets.find((set) => set.sceneId === sceneId)
   const scene = analysis.scenes.find((item) => item.id === sceneId) ?? analysis.scenes[0]

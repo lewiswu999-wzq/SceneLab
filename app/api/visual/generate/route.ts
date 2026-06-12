@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 
-import { readProviderSettings, type ServerProviderSettings } from "@/lib/server-api-settings"
+import {
+  joinApiEndpoint,
+  readProviderSettings,
+  type ServerProviderSettings,
+} from "@/lib/server-api-settings"
 import type { StoryboardImageRequest, VisualGenerationProvider } from "@/lib/types"
 import {
   implementedRemoteVisualProviders,
@@ -13,14 +17,6 @@ type VisualGeneratePayload = {
   aspectRatio: StoryboardImageRequest["aspectRatio"]
   stylePreset?: string
   title?: string
-}
-
-function getEndpoint(baseUrl: string) {
-  const trimmed = baseUrl.replace(/\/+$/, "")
-  if (trimmed.endsWith("/images/generations")) {
-    return trimmed
-  }
-  return `${trimmed}/images/generations`
 }
 
 function extractImageUrl(payload: unknown) {
@@ -40,40 +36,44 @@ function extractImageUrl(payload: unknown) {
   return data.image_url ?? data.url
 }
 
-async function generateWithJimeng(
+async function generateWithImageStream(
   payload: VisualGeneratePayload,
   clientSettings: ServerProviderSettings
 ) {
   const apiKey = clientSettings.apiKey || process.env.JIMENG_API_KEY
   const baseUrl = clientSettings.baseUrl || process.env.JIMENG_BASE_URL
   const model = clientSettings.model || process.env.JIMENG_MODEL
+  const apiPath = clientSettings.apiPath || "/images/generations"
 
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json(
       {
-        error: "JIMENG_API_KEY, JIMENG_BASE_URL, and JIMENG_MODEL are required.",
+        error: "图像流 API 需要 API Key、Base URL 和模型名称。",
       },
       { status: 400 }
     )
   }
 
-  const response = await fetch(getEndpoint(baseUrl), {
+  const response = await fetch(
+    joinApiEndpoint(baseUrl, apiPath, "/images/generations"),
+    {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      prompt: `${payload.prompt}\n\n画幅比例：${payload.aspectRatio}。`,
-      response_format: "url",
-      size: "2K",
-      output_format: "png",
-      extra_body: {
-        watermark: false,
-      },
-    }),
-  })
+      body: JSON.stringify({
+        model,
+        prompt: `${payload.prompt}\n\n画幅比例：${payload.aspectRatio}。`,
+        response_format: "url",
+        size: "2K",
+        output_format: "png",
+        extra_body: {
+          watermark: false,
+        },
+      }),
+    }
+  )
 
   const text = await response.text()
   let parsed: unknown
@@ -86,7 +86,7 @@ async function generateWithJimeng(
   if (!response.ok) {
     return NextResponse.json(
       {
-        error: "Jimeng image generation failed.",
+        error: "图像流生成失败。",
         status: response.status,
         details: parsed,
       },
@@ -98,7 +98,7 @@ async function generateWithJimeng(
   if (!imageUrl) {
     return NextResponse.json(
       {
-        error: "Jimeng response did not include an image URL.",
+        error: "图像流响应中没有可用的图片 URL。",
         details: parsed,
       },
       { status: 502 }
@@ -107,7 +107,7 @@ async function generateWithJimeng(
 
   return NextResponse.json({
     imageUrl,
-    provider: "jimeng",
+    provider: payload.provider,
     model,
     raw: parsed,
   })
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     }
 
     if (isImplementedRemoteVisualProvider(payload.provider)) {
-      return generateWithJimeng(payload, readProviderSettings(request, "jimeng"))
+      return generateWithImageStream(payload, readProviderSettings(request, "image"))
     }
 
     return NextResponse.json(

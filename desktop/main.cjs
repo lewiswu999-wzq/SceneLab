@@ -25,15 +25,21 @@ function apiSettingsPath() {
 }
 
 function validateApiSettings(value) {
-  const provider = (candidate) => ({
+  const stream = (candidate, defaultPath) => ({
     apiKey: String(candidate?.apiKey ?? "").trim().slice(0, 4096),
     baseUrl: String(candidate?.baseUrl ?? "").trim().slice(0, 2048),
     model: String(candidate?.model ?? "").trim().slice(0, 512),
+    apiPath: String(candidate?.apiPath ?? defaultPath).trim().slice(0, 512),
   })
 
   return {
-    deepseek: provider(value?.deepseek),
-    jimeng: provider(value?.jimeng),
+    text: stream(value?.text ?? value?.deepseek, "/chat/completions"),
+    image: stream(value?.image ?? value?.jimeng, "/images/generations"),
+    video: stream(value?.video, "/videos/generations"),
+    identities:
+      value?.identities && typeof value.identities === "object"
+        ? value.identities
+        : undefined,
   }
 }
 

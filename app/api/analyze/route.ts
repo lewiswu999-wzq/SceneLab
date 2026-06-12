@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const input = inputSchema.parse(body)
     const result = await analyzeTextWithDeepSeek(
       input,
-      readProviderSettings(request, "deepseek")
+      readProviderSettings(request, "text")
     )
 
     return NextResponse.json(result)
