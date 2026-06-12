@@ -4,15 +4,16 @@ import { toast } from "sonner"
 
 import { ConceptPosterGenerator } from "@/components/visual/ConceptPosterGenerator"
 import { PosterCard } from "@/components/visual/PosterCard"
-import type { ConceptPosterResult, SceneAnalysis, VisualAgentState } from "@/lib/types"
+import type { ConceptPosterResult, LockedVisualStyle, SceneAnalysis, VisualAgentState } from "@/lib/types"
 
 type ConceptPosterWorkspaceProps = {
   analysis: SceneAnalysis
   state: VisualAgentState
+  lockedStyle?: LockedVisualStyle
   onChange: (state: VisualAgentState, logs?: string[]) => void
 }
 
-export function ConceptPosterWorkspace({ analysis, state, onChange }: ConceptPosterWorkspaceProps) {
+export function ConceptPosterWorkspace({ analysis, state, lockedStyle, onChange }: ConceptPosterWorkspaceProps) {
   function addPoster(poster: ConceptPosterResult) {
     onChange({ ...state, posters: [...state.posters, poster] }, ["generateConceptPoster"])
   }
@@ -32,6 +33,7 @@ export function ConceptPosterWorkspace({ analysis, state, onChange }: ConceptPos
     <div className="grid gap-5">
       <ConceptPosterGenerator
         analysis={analysis}
+        lockedStyle={lockedStyle}
         consistencyPack={state.characterConsistencyPack}
         existingPosters={state.posters}
         onGenerated={addPoster}

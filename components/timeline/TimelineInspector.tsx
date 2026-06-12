@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import type { TimelineShot } from "@/lib/types"
 
 const transitions: TimelineShot["transition"][] = ["cut", "fade", "dissolve", "match-cut", "jump-cut", "black"]
+const shotSizes = ["大全景", "全景", "中景", "近景", "特写", "过肩镜头", "主观镜头"]
+const cameraAngles = ["平视", "低机位", "高机位", "俯拍", "仰拍", "倾斜机位", "主观视角"]
+const cameraMovements = ["静态观察", "推镜", "拉镜", "横移", "跟拍", "手持", "摇镜", "快速横移", "升降"]
 
 type TimelineInspectorProps = {
   shot?: TimelineShot
@@ -23,7 +26,7 @@ export function TimelineInspector({ shot, onChange }: TimelineInspectorProps) {
     )
   }
 
-  const disabled = shot.isLocked
+  const disabled = false
 
   return (
     <aside className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.025] p-4">
@@ -39,8 +42,9 @@ export function TimelineInspector({ shot, onChange }: TimelineInspectorProps) {
       </div>
       <FieldText label="标题" value={shot.title} disabled={disabled} onChange={(value) => onChange({ title: value })} />
       <FieldNumber label="时长（秒）" value={shot.durationSeconds} disabled={disabled} onChange={(value) => onChange({ durationSeconds: value })} />
-      <FieldText label="景别" value={shot.shotSize} disabled={disabled} onChange={(value) => onChange({ shotSize: value })} />
-      <FieldText label="镜头运动" value={shot.cameraMovement} disabled={disabled} onChange={(value) => onChange({ cameraMovement: value })} />
+      <FieldSelect label="景别" value={shot.shotSize} options={shotSizes} disabled={disabled} onChange={(value) => onChange({ shotSize: value })} />
+      <FieldSelect label="机位" value={shot.cameraAngle ?? "平视"} options={cameraAngles} disabled={disabled} onChange={(value) => onChange({ cameraAngle: value })} />
+      <FieldSelect label="镜头运动" value={shot.cameraMovement} options={cameraMovements} disabled={disabled} onChange={(value) => onChange({ cameraMovement: value })} />
       <FieldNumber label="情绪值" value={shot.emotionValue} disabled={disabled} onChange={(value) => onChange({ emotionValue: value })} />
       <FieldNumber label="节奏值" value={shot.rhythmValue} disabled={disabled} onChange={(value) => onChange({ rhythmValue: value })} />
       <label className="grid gap-1">
@@ -63,6 +67,34 @@ export function TimelineInspector({ shot, onChange }: TimelineInspectorProps) {
         <Textarea value={shot.note ?? ""} disabled={disabled} onChange={(event) => onChange({ note: event.target.value })} className="min-h-24 border-white/10 bg-black/25 text-sm text-zinc-200 disabled:opacity-70" />
       </label>
     </aside>
+  )
+}
+
+function FieldSelect({
+  label,
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  label: string
+  value: string
+  options: readonly string[]
+  disabled: boolean
+  onChange: (value: string) => void
+}) {
+  return (
+    <label className="grid gap-1">
+      <span className="text-xs text-zinc-400">{label}</span>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-8 rounded-lg border border-white/10 bg-zinc-950 px-2 text-sm text-zinc-100 disabled:opacity-70"
+      >
+        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </label>
   )
 }
 

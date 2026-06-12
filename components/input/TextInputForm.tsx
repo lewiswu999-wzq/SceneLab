@@ -53,7 +53,7 @@ function OptionGroup({ value, onChange, options, compact }: OptionGroupProps) {
           onChange(selected)
         }
       }}
-      className={cn("flex flex-wrap", compact && "max-w-xl")}
+      className={cn("flex flex-wrap gap-1", compact && "max-w-xl")}
       variant="outline"
       size="sm"
       spacing={1}
@@ -63,7 +63,7 @@ function OptionGroup({ value, onChange, options, compact }: OptionGroupProps) {
           key={option}
           type="button"
           value={option}
-          className="border-white/10 bg-white/[0.03] px-3 text-zinc-300 data-pressed:bg-teal-400/15 data-pressed:text-teal-100 data-pressed:ring-1 data-pressed:ring-teal-300/30"
+          className="min-h-9 border-white/10 bg-white/[0.025] px-3 text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-100 data-pressed:border-primary/30 data-pressed:bg-primary/10 data-pressed:text-primary data-pressed:ring-1 data-pressed:ring-primary/20"
         >
           {option}
         </ToggleGroupItem>
@@ -127,22 +127,22 @@ export function TextInputForm() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-7">
       <FieldGroup>
         <Field data-invalid={Boolean(form.formState.errors.sourceText)}>
           <div className="flex items-end justify-between gap-3">
             <FieldLabel htmlFor="sourceText" className="text-zinc-100">
               片段输入
             </FieldLabel>
-            <span className="font-mono text-xs text-zinc-500">
-              {sourceText.length} chars
+            <span className="font-mono text-[11px] text-zinc-600">
+              {sourceText.length > 2000 ? "长剧本模式" : `${sourceText.length} 字符`}
             </span>
           </div>
           <Textarea
             id="sourceText"
             aria-invalid={Boolean(form.formState.errors.sourceText)}
             {...form.register("sourceText")}
-            className="min-h-72 resize-y border-white/10 bg-black/30 font-mono text-sm leading-7 text-zinc-100 placeholder:text-zinc-600 focus-visible:border-teal-300/40 focus-visible:ring-teal-300/15 md:min-h-[420px]"
+            className="min-h-72 resize-y border-white/10 bg-[#080a0b] font-mono text-sm leading-7 text-zinc-100 placeholder:text-zinc-700 focus-visible:border-primary/50 focus-visible:ring-primary/15 md:min-h-[380px]"
             placeholder="粘贴小说、剧本、短剧文案或故事梗概..."
           />
           <FieldDescription>
@@ -208,7 +208,7 @@ export function TextInputForm() {
           type="submit"
           size="lg"
           disabled={form.formState.isSubmitting}
-          className="bg-teal-300 text-zinc-950 hover:bg-teal-200"
+          className="min-h-11 bg-primary text-primary-foreground shadow-[0_0_0_1px_rgba(88,224,194,0.08)] hover:bg-[#75e8cf]"
         >
           {form.formState.isSubmitting ? (
             <Loader2Icon data-icon="inline-start" className="animate-spin" />

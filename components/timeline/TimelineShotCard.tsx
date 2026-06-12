@@ -55,6 +55,7 @@ export function TimelineShotCard({
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
         <span>{shot.shotSize}</span>
+        <span>{shot.cameraAngle ?? "平视"}</span>
         <span>{shot.cameraMovement}</span>
         <span>情绪 {shot.emotionValue}</span>
         <span>节奏 {shot.rhythmValue}</span>

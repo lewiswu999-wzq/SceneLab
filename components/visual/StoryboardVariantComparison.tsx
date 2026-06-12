@@ -7,12 +7,14 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { VariantStyleBadge } from "@/components/visual/VariantStyleBadge"
+import { PROMPT_EXPERT_PIPELINE_VERSION } from "@/lib/prompt-expert"
 import { generateStoryboardVariants } from "@/lib/visual-generation"
 import {
   type AvailableVisualGenerationProvider,
   visualProviderOptions,
 } from "@/lib/visual-providers"
 import type {
+  LockedVisualStyle,
   SceneAnalysis,
   StoryboardComparisonSet,
   StoryboardImageResult,
@@ -21,12 +23,19 @@ import type {
 type StoryboardVariantComparisonProps = {
   analysis: SceneAnalysis
   comparisonSets: StoryboardComparisonSet[]
-  onChange: (sets: StoryboardComparisonSet[], selectedImage?: StoryboardImageResult, lockImage?: boolean) => void
+  lockedStyle?: LockedVisualStyle
+  onChange: (
+    sets: StoryboardComparisonSet[],
+    selectedImage?: StoryboardImageResult,
+    lockImage?: boolean,
+    lockedStyle?: LockedVisualStyle
+  ) => void
 }
 
 export function StoryboardVariantComparison({
   analysis,
   comparisonSets,
+  lockedStyle,
   onChange,
 }: StoryboardVariantComparisonProps) {
   const [sceneId, setSceneId] = useState(analysis.scenes[0]?.id ?? "")
@@ -40,7 +49,15 @@ export function StoryboardVariantComparison({
     if (!scene || !shot) {
       return
     }
-    if (currentSet?.variants.some((variant) => variant.image.provider === provider)) {
+    const currentProviderVariants = currentSet?.variants.filter(
+      (variant) => variant.image.provider === provider
+    )
+    const hasCurrentPromptExpertVariants =
+      currentProviderVariants?.length &&
+      currentProviderVariants.every(
+        (variant) => variant.promptExpert?.pipelineVersion === PROMPT_EXPERT_PIPELINE_VERSION
+      )
+    if (hasCurrentPromptExpertVariants) {
       toast.info("当前场景和模型通道已有候选版本，已复用现有对比组。")
       return
     }
@@ -48,7 +65,7 @@ export function StoryboardVariantComparison({
     try {
       const next = await generateStoryboardVariants(scene, shot, analysis.characters, provider, 5)
       onChange([...comparisonSets.filter((set) => set.sceneId !== scene.id), next])
-      toast.success("候选分镜已生成")
+      toast.success(currentProviderVariants?.length ? "旧版候选已按 Prompt Expert 重新生成" : "候选分镜已生成")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "候选分镜生成失败")
     } finally {
@@ -83,9 +100,20 @@ export function StoryboardVariantComparison({
             isLocked: lockImage,
           }
         : undefined,
-      lockImage
+      lockImage,
+      lockImage && variant
+        ? {
+            style: variant.style,
+            label: variant.label,
+            sceneId: variant.sceneId,
+            variantId: variant.id,
+            imageId: variant.image.id,
+            prompt: variant.promptExpert?.finalPrompt ?? variant.prompt,
+            updatedAt: new Date().toISOString(),
+          }
+        : undefined
     )
-    toast.success(lockImage ? "已锁定为视觉基准" : "已选择最终版本")
+    toast.success(lockImage ? `已锁定全局风格：${variant?.label ?? "当前风格"}` : "已选择最终版本")
   }
 
   return (
@@ -98,6 +126,15 @@ export function StoryboardVariantComparison({
         <CardDescription>为同一场景生成不同视觉方案，选择后可作为后续视觉参考。</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.025] p-3">
+          <div className="grid gap-1">
+            <div className="text-xs font-medium text-zinc-300">当前全局锁定风格</div>
+            <div className="text-sm text-teal-100">{lockedStyle?.label ?? "未锁定"}</div>
+          </div>
+          <p className="max-w-2xl text-xs leading-5 text-zinc-500">
+            锁定某个候选风格后，分镜图、海报等视觉生成会默认按这个风格走。点击另一个候选的“锁定风格”即可更改。
+          </p>
+        </div>
         <div className="flex flex-wrap gap-3">
           <select value={sceneId} onChange={(event) => setSceneId(event.target.value)} className="h-8 rounded-lg border border-white/10 bg-zinc-950 px-2 text-sm text-zinc-100">
             {analysis.scenes.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
@@ -139,7 +176,7 @@ export function StoryboardVariantComparison({
                     </Button>
                     <Button size="sm" variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-200" onClick={() => selectVariant(variant.id, true)}>
                       <LockIcon data-icon="inline-start" />
-                      锁定基准
+                      {lockedStyle?.variantId === variant.id ? "已锁定风格" : "锁定风格"}
                     </Button>
                   </div>
                 </CardContent>

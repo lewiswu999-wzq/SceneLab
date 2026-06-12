@@ -52,6 +52,7 @@ import type {
   StoryboardImageResult,
   TextInput,
   VisualAgentState,
+  LockedVisualStyle,
 } from "@/lib/types"
 import { ensureVisualAgentState, getAllStoryboardImages } from "@/lib/visual-agent-state"
 
@@ -254,7 +255,6 @@ export function AgentWorkspace() {
   const [result, setResult] = useState<EditableAgentRunResult>(() => createFallbackPayload().result)
   const visualState = ensureVisualAgentState(result.analysis, result.visualState)
   const storyboardImageCount = visualState.storyboardVisualSets.reduce((total, set) => total + set.images.length, 0)
-  const lockedImageCount = visualState.storyboardVisualSets.filter((set) => set.lockedImageId).length
 
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
@@ -356,11 +356,17 @@ export function AgentWorkspace() {
   function handleComparisonChange(
     sets: StoryboardComparisonSet[],
     selectedImage?: StoryboardImageResult,
-    lockImage = false
+    lockImage = false,
+    lockedStyle?: LockedVisualStyle
   ) {
+    const nextBaseState = {
+      ...visualState,
+      storyboardComparisonSets: sets,
+      lockedStyle: lockedStyle ?? visualState.lockedStyle,
+    }
     const nextVisualState = selectedImage
-      ? upsertStoryboardImage({ ...visualState, storyboardComparisonSets: sets }, selectedImage, lockImage)
-      : { ...visualState, storyboardComparisonSets: sets }
+      ? upsertStoryboardImage(nextBaseState, selectedImage, lockImage)
+      : nextBaseState
     handleVisualStateChange(nextVisualState, [
       selectedImage ? (lockImage ? "selectStoryboardVariant:locked" : "selectStoryboardVariant") : "generateStoryboardVariants",
     ])
@@ -377,50 +383,50 @@ export function AgentWorkspace() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080808] text-zinc-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1520px] flex-col">
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080808]/92 px-5 py-3 backdrop-blur-xl sm:px-7">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <main className="min-h-screen overflow-x-hidden bg-background text-zinc-100">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1800px] flex-col">
+        <header className="app-titlebar px-4 py-2 sm:px-5">
+          <div className="flex min-h-11 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => router.push("/analysis")}
-                className="text-zinc-400 hover:text-zinc-100"
+                className="size-9 text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-100"
                 aria-label="返回分析页"
               >
                 <ArrowLeftIcon />
               </Button>
               <div className="grid gap-0.5">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-lg font-semibold tracking-normal text-zinc-50 sm:text-xl">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base font-semibold tracking-normal text-zinc-50">
                     SceneLab
                   </h1>
                   <span className="hidden h-4 w-px bg-white/10 sm:block" />
-                  <span className="hidden text-sm text-zinc-400 sm:inline">
-                    影视 AIGC 视觉创作工作台
+                  <span className="hidden text-xs text-zinc-500 sm:inline">
+                    视觉制作台
                   </span>
                 </div>
-                <p className="line-clamp-1 max-w-4xl text-xs text-zinc-500">
+                <p className="line-clamp-1 max-w-3xl text-[11px] text-zinc-600">
                   {result.analysis.overview.summary}
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <StatusPill label="模型" value={`${result.analysis.meta.provider ?? "mock"} / ${result.analysis.meta.model ?? "local"}`} />
               <StatusPill label="场景" value={String(result.analysis.scenes.length)} />
               <StatusPill label="分镜图" value={String(storyboardImageCount)} />
-              <StatusPill label="锁定" value={String(lockedImageCount)} tone="amber" />
+              <StatusPill label="锁定风格" value={visualState.lockedStyle?.label ?? "未锁定"} tone="amber" />
             </div>
           </div>
         </header>
 
-        <section className="grid flex-1 gap-0 lg:grid-cols-[248px_1fr]">
-          <aside className="border-b border-white/10 bg-[#0b0b0c] px-4 py-4 lg:border-b-0 lg:border-r lg:px-3">
-            <nav className="grid gap-5">
+        <section className="grid min-w-0 flex-1 gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="min-w-0 overflow-hidden border-b border-white/10 bg-[#0b0d0e] px-3 py-3 lg:border-b-0 lg:border-r">
+            <nav className="flex min-w-0 max-w-full gap-2 overflow-x-auto lg:grid lg:gap-4 lg:overflow-visible">
               {navGroups.map((group) => (
-                <div key={group.title} className="grid gap-2">
-                  <div className="px-2 text-[11px] font-medium text-zinc-600">
+                <div key={group.title} className="grid min-w-[190px] gap-1 lg:min-w-0">
+                  <div className="px-2 py-1 text-[10px] font-semibold uppercase text-zinc-700">
                     {group.title}
                   </div>
                   <div className="grid gap-1">
@@ -433,9 +439,9 @@ export function AgentWorkspace() {
                           type="button"
                           onClick={() => setActiveSection(item.id)}
                           data-active={active}
-                          className="relative flex h-9 items-center gap-2 rounded-md px-2 text-left text-sm text-zinc-400 transition-colors hover:bg-white/[0.045] hover:text-zinc-100 data-[active=true]:bg-white/[0.075] data-[active=true]:text-zinc-50"
+                          className="relative flex min-h-10 items-center gap-2 rounded-md px-2.5 text-left text-sm text-zinc-500 transition-colors hover:bg-white/[0.045] hover:text-zinc-100 data-[active=true]:bg-primary/[0.08] data-[active=true]:text-primary"
                         >
-                          <span className="absolute left-0 top-1.5 hidden h-6 w-0.5 rounded-full bg-teal-300 data-[active=true]:block" data-active={active} />
+                          <span className="absolute left-0 top-2 hidden h-6 w-0.5 rounded-full bg-primary data-[active=true]:block" data-active={active} />
                           <Icon className="size-4" />
                           <span className="truncate">{item.label}</span>
                         </button>
@@ -446,12 +452,12 @@ export function AgentWorkspace() {
               ))}
             </nav>
 
-            <div className="mt-5 border-t border-white/10 pt-4">
-              <div className="mb-2 px-2 text-[11px] font-medium text-zinc-600">Tool Call Logs</div>
+            <div className="mt-5 hidden border-t border-white/10 pt-4 lg:block">
+              <div className="mb-2 px-2 text-[10px] font-semibold uppercase text-zinc-700">运行记录</div>
               <div className="max-h-56 space-y-1 overflow-auto px-2">
                 {result.toolCallLogs.slice(-14).map((log, index) => (
-                  <div key={`${log}-${index}`} className="flex gap-2 font-mono text-[11px] leading-5 text-zinc-600">
-                    <span className="text-amber-300/80">{String(index + 1).padStart(2, "0")}</span>
+                  <div key={`${log}-${index}`} className="flex gap-2 font-mono text-[10px] leading-5 text-zinc-700">
+                    <span className="text-primary/60">{String(index + 1).padStart(2, "0")}</span>
                     <span className="truncate">{log}</span>
                   </div>
                 ))}
@@ -459,8 +465,8 @@ export function AgentWorkspace() {
             </div>
           </aside>
 
-          <div className="min-w-0 bg-[linear-gradient(180deg,#0b0b0c_0%,#09090a_42%,#080808_100%)] px-4 py-5 sm:px-6 lg:px-7">
-            <div className="mx-auto flex max-w-6xl flex-col gap-5">
+          <div className="min-w-0 bg-[#090b0c] px-4 py-5 sm:px-6 lg:px-8">
+            <div className="mx-auto flex max-w-[1280px] flex-col gap-4">
               <FeatureIntroPanel {...featureIntros[activeSection]} />
 
               <ProjectPulse analysis={result.analysis} />
@@ -469,6 +475,7 @@ export function AgentWorkspace() {
                 <VisualStoryboardPanel
                   analysis={result.analysis}
                   state={visualState}
+                  lockedStyle={visualState.lockedStyle}
                   onChange={handleVisualStateChange}
                 />
               )}
@@ -476,6 +483,7 @@ export function AgentWorkspace() {
                 <StoryboardVariantComparison
                   analysis={result.analysis}
                   comparisonSets={visualState.storyboardComparisonSets}
+                  lockedStyle={visualState.lockedStyle}
                   onChange={handleComparisonChange}
                 />
               )}
@@ -512,6 +520,7 @@ export function AgentWorkspace() {
                 <ConceptPosterWorkspace
                   analysis={result.analysis}
                   state={visualState}
+                  lockedStyle={visualState.lockedStyle}
                   onChange={handleVisualStateChange}
                 />
               )}
@@ -560,9 +569,9 @@ function StatusPill({
   tone?: "teal" | "amber"
 }) {
   return (
-    <div className="flex h-7 items-center gap-2 rounded-md border border-white/10 bg-white/[0.035] px-2.5">
-      <span className="text-zinc-500">{label}</span>
-      <span className={tone === "amber" ? "font-mono text-amber-200" : "font-mono text-teal-100"}>
+    <div className="flex h-7 items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] px-2.5">
+      <span className="text-zinc-600">{label}</span>
+      <span className={tone === "amber" ? "font-mono text-amber-200" : "font-mono text-primary"}>
         {value}
       </span>
     </div>
@@ -571,7 +580,7 @@ function StatusPill({
 
 function ProjectPulse({ analysis }: { analysis: SceneAnalysis }) {
   return (
-    <Card className="rounded-lg border border-white/10 bg-white/[0.025] py-0 ring-0">
+    <Card className="rounded-md border border-white/10 bg-[#0d1011] py-0 ring-0">
       <CardContent className="grid gap-3 p-3 md:grid-cols-4">
         <PulseItem label="核心冲突" value={analysis.overview.coreConflict} />
         <PulseItem label="情绪曲线" value={analysis.overview.emotionalArc} />
