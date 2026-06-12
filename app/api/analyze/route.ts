@@ -3,6 +3,7 @@ import { z } from "zod"
 
 import { ANALYSIS_DEPTHS, STORY_STYLES, TEXT_TYPES } from "@/lib/constants"
 import { analyzeTextWithDeepSeek } from "@/lib/deepseek-analyzer"
+import { readProviderSettings } from "@/lib/server-api-settings"
 
 export const runtime = "nodejs"
 
@@ -17,7 +18,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const input = inputSchema.parse(body)
-    const result = await analyzeTextWithDeepSeek(input)
+    const result = await analyzeTextWithDeepSeek(
+      input,
+      readProviderSettings(request, "deepseek")
+    )
 
     return NextResponse.json(result)
   } catch (error) {

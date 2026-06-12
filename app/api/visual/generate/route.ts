@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { readProviderSettings, type ServerProviderSettings } from "@/lib/server-api-settings"
 import type { StoryboardImageRequest, VisualGenerationProvider } from "@/lib/types"
 import {
   implementedRemoteVisualProviders,
@@ -39,10 +40,13 @@ function extractImageUrl(payload: unknown) {
   return data.image_url ?? data.url
 }
 
-async function generateWithJimeng(payload: VisualGeneratePayload) {
-  const apiKey = process.env.JIMENG_API_KEY
-  const baseUrl = process.env.JIMENG_BASE_URL
-  const model = process.env.JIMENG_MODEL
+async function generateWithJimeng(
+  payload: VisualGeneratePayload,
+  clientSettings: ServerProviderSettings
+) {
+  const apiKey = clientSettings.apiKey || process.env.JIMENG_API_KEY
+  const baseUrl = clientSettings.baseUrl || process.env.JIMENG_BASE_URL
+  const model = clientSettings.model || process.env.JIMENG_MODEL
 
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json(
@@ -117,7 +121,7 @@ export async function POST(request: Request) {
     }
 
     if (isImplementedRemoteVisualProvider(payload.provider)) {
-      return generateWithJimeng(payload)
+      return generateWithJimeng(payload, readProviderSettings(request, "jimeng"))
     }
 
     return NextResponse.json(

@@ -24,6 +24,7 @@ import {
   STORY_STYLES,
   TEXT_TYPES,
 } from "@/lib/constants"
+import { getApiRequestHeaders } from "@/lib/api-settings"
 import type { SceneAnalysis, TextInput } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -91,6 +92,7 @@ export function TextInputForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(await getApiRequestHeaders()),
         },
         body: JSON.stringify(input),
       })

@@ -1,6 +1,7 @@
 import OpenAI from "openai"
 
 import { analyzeText } from "@/lib/mock-analyzer"
+import type { ServerProviderSettings } from "@/lib/server-api-settings"
 import type {
   Character,
   Relationship,
@@ -184,9 +185,12 @@ function parseJSONContent(content: string) {
   }
 }
 
-export async function analyzeTextWithDeepSeek(input: TextInput) {
-  const apiKey = process.env.DEEPSEEK_API_KEY
-  const model = process.env.DEEPSEEK_MODEL || DEFAULT_DEEPSEEK_MODEL
+export async function analyzeTextWithDeepSeek(
+  input: TextInput,
+  clientSettings: ServerProviderSettings = {}
+) {
+  const apiKey = clientSettings.apiKey || process.env.DEEPSEEK_API_KEY
+  const model = clientSettings.model || process.env.DEEPSEEK_MODEL || DEFAULT_DEEPSEEK_MODEL
 
   if (!apiKey) {
     const analysis = analyzeText(input)
@@ -207,7 +211,10 @@ export async function analyzeTextWithDeepSeek(input: TextInput) {
 
   const client = new OpenAI({
     apiKey,
-    baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
+    baseURL:
+      clientSettings.baseUrl ||
+      process.env.DEEPSEEK_BASE_URL ||
+      "https://api.deepseek.com",
   })
 
   try {

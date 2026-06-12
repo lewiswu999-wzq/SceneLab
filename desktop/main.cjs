@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { app, BrowserWindow, dialog, shell, utilityProcess } = require("electron")
+const {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  safeStorage,
+  shell,
+  utilityProcess,
+} = require("electron")
 const fs = require("node:fs")
 const http = require("node:http")
 const net = require("node:net")
@@ -11,6 +19,50 @@ const DEV_URL = process.env.SCENELAB_DEV_URL || "http://localhost:3000"
 
 let mainWindow
 let serverProcess
+
+function apiSettingsPath() {
+  return path.join(app.getPath("userData"), "api-settings.bin")
+}
+
+function validateApiSettings(value) {
+  const provider = (candidate) => ({
+    apiKey: String(candidate?.apiKey ?? "").trim().slice(0, 4096),
+    baseUrl: String(candidate?.baseUrl ?? "").trim().slice(0, 2048),
+    model: String(candidate?.model ?? "").trim().slice(0, 512),
+  })
+
+  return {
+    deepseek: provider(value?.deepseek),
+    jimeng: provider(value?.jimeng),
+  }
+}
+
+function registerApiSettingsHandlers() {
+  ipcMain.handle("api-settings:load", () => {
+    const settingsFile = apiSettingsPath()
+    if (!fs.existsSync(settingsFile) || !safeStorage.isEncryptionAvailable()) {
+      return null
+    }
+    try {
+      return JSON.parse(safeStorage.decryptString(fs.readFileSync(settingsFile)))
+    } catch (error) {
+      writeLog(`api settings load failed: ${error instanceof Error ? error.message : String(error)}`)
+      return null
+    }
+  })
+
+  ipcMain.handle("api-settings:save", (_event, value) => {
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new Error("Windows 加密存储当前不可用。")
+    }
+    const encrypted = safeStorage.encryptString(JSON.stringify(validateApiSettings(value)))
+    fs.writeFileSync(apiSettingsPath(), encrypted)
+  })
+
+  ipcMain.handle("api-settings:clear", () => {
+    fs.rmSync(apiSettingsPath(), { force: true })
+  })
+}
 
 function writeLog(message) {
   const timestamp = new Date().toISOString()
@@ -115,6 +167,7 @@ function createWindow(url) {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, "preload.cjs"),
       sandbox: true,
     },
   })
@@ -136,6 +189,7 @@ function createWindow(url) {
 
 app.whenReady().then(async () => {
   try {
+    registerApiSettingsHandlers()
     const url = app.isPackaged ? await startProductionServer() : DEV_URL
     writeLog(`loading ${url}`)
     createWindow(url)

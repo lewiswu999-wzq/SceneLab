@@ -8,6 +8,7 @@ import type {
   StoryboardVariantStyle,
   VisualGenerationProvider,
 } from "@/lib/types"
+import { getApiRequestHeaders } from "@/lib/api-settings"
 import {
   buildSceneStoryboardCraftPrompt,
   buildStoryboardAnnotation,
@@ -159,6 +160,7 @@ async function requestProviderImage(request: StoryboardImageRequest) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await getApiRequestHeaders()),
     },
     body: JSON.stringify({
       provider: request.provider,

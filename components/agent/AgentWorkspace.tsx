@@ -31,6 +31,7 @@ import { RegenerateFromEditsPanel } from "@/components/agent/RegenerateFromEdits
 import { RevisionHistoryPanel } from "@/components/agent/RevisionHistoryPanel"
 import { UserEditPanel } from "@/components/agent/UserEditPanel"
 import { ShotTimelineEditor } from "@/components/timeline/ShotTimelineEditor"
+import { ApiSettingsButton } from "@/components/settings/ApiSettingsButton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CharacterConsistencyPanel } from "@/components/visual/CharacterConsistencyPanel"
@@ -413,6 +414,7 @@ export function AgentWorkspace() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <ApiSettingsButton compact />
               <StatusPill label="模型" value={`${result.analysis.meta.provider ?? "mock"} / ${result.analysis.meta.model ?? "local"}`} />
               <StatusPill label="场景" value={String(result.analysis.scenes.length)} />
               <StatusPill label="分镜图" value={String(storyboardImageCount)} />

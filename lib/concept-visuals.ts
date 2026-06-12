@@ -8,6 +8,7 @@ import type {
   StoryboardReel,
   StoryboardTimeline,
 } from "@/lib/types"
+import { getApiRequestHeaders } from "@/lib/api-settings"
 
 function dataPoster(title: string, subtitle: string, seed: string, aspectRatio: string) {
   const hash = Array.from(seed).reduce((value, char) => value + char.charCodeAt(0), 0)
@@ -37,6 +38,7 @@ async function requestProviderPoster(request: ConceptPosterRequest) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await getApiRequestHeaders()),
     },
     body: JSON.stringify({
       provider: request.provider,

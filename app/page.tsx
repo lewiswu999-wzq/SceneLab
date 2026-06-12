@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 
 import { TextInputForm } from "@/components/input/TextInputForm"
+import { ApiSettingsButton } from "@/components/settings/ApiSettingsButton"
 
 const previewItems = [
   { icon: ScanSearchIcon, title: "剧本分析", description: "结构、冲突、人物与情绪" },
@@ -29,9 +30,12 @@ export default function Home() {
               <div className="text-[11px] text-zinc-500">AI PRE-PRODUCTION WORKSPACE</div>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <span className="size-1.5 rounded-full bg-emerald-400" />
-            本地工作区
+          <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">
+              <span className="size-1.5 rounded-full bg-emerald-400" />
+              本地工作区
+            </div>
+            <ApiSettingsButton compact />
           </div>
         </div>
       </header>
