@@ -148,7 +148,7 @@ export function TextInputForm() {
             placeholder="粘贴小说、剧本、短剧文案或故事梗概..."
           />
           <FieldDescription>
-            优先调用“API 接入”中的文字流；未配置或请求失败时自动回退到本地 mock。
+            优先调用“API 接入”中的文字流；仅在未配置文字流时使用本地 mock，已配置但调用失败会直接显示错误。
           </FieldDescription>
           <FieldError errors={[form.formState.errors.sourceText]} />
         </Field>

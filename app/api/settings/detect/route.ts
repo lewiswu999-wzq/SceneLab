@@ -6,6 +6,7 @@ import {
   joinApiEndpoint,
   readProviderSettings,
 } from "@/lib/server-api-settings"
+import { describeUpstreamError, upstreamFetch } from "@/lib/upstream-fetch"
 
 export const runtime = "nodejs"
 
@@ -52,6 +53,7 @@ function normalizeIdentity(value: unknown): ApiIdentity {
 }
 
 export async function POST(request: Request) {
+  let endpoint = ""
   try {
     const metadata = requestSchema.parse(await request.json())
     const textSettings = readProviderSettings(request, "text")
@@ -63,12 +65,13 @@ export async function POST(request: Request) {
       )
     }
 
-    const response = await fetch(
-      joinApiEndpoint(
-        textSettings.baseUrl,
-        textSettings.apiPath || "/chat/completions",
-        "/chat/completions"
-      ),
+    endpoint = joinApiEndpoint(
+      textSettings.baseUrl,
+      textSettings.apiPath || "/chat/completions",
+      "/chat/completions"
+    )
+    const response = await upstreamFetch(
+      endpoint,
       {
         method: "POST",
         headers: {
@@ -134,7 +137,14 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "API 识别失败。" },
+      {
+        error:
+          endpoint && error instanceof TypeError && error.message === "fetch failed"
+            ? describeUpstreamError(error, endpoint)
+            : error instanceof Error
+              ? error.message
+              : "API 识别失败。",
+      },
       { status: 400 }
     )
   }

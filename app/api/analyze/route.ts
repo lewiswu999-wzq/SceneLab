@@ -4,6 +4,7 @@ import { z } from "zod"
 import { ANALYSIS_DEPTHS, STORY_STYLES, TEXT_TYPES } from "@/lib/constants"
 import { analyzeTextWithDeepSeek } from "@/lib/deepseek-analyzer"
 import { readProviderSettings } from "@/lib/server-api-settings"
+import { UpstreamApiError } from "@/lib/upstream-fetch"
 
 export const runtime = "nodejs"
 
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       {
         error: error instanceof Error ? error.message : "Invalid analyze request.",
       },
-      { status: 400 }
+      { status: error instanceof UpstreamApiError ? 502 : 400 }
     )
   }
 }

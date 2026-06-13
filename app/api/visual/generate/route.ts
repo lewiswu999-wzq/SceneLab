@@ -6,6 +6,7 @@ import {
   type ServerProviderSettings,
 } from "@/lib/server-api-settings"
 import type { StoryboardImageRequest, VisualGenerationProvider } from "@/lib/types"
+import { describeUpstreamError, upstreamFetch } from "@/lib/upstream-fetch"
 import {
   implementedRemoteVisualProviders,
   isImplementedRemoteVisualProvider,
@@ -54,14 +55,15 @@ async function generateWithImageStream(
     )
   }
 
-  const response = await fetch(
-    joinApiEndpoint(baseUrl, apiPath, "/images/generations"),
-    {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+  const endpoint = joinApiEndpoint(baseUrl, apiPath, "/images/generations")
+  let response: Response
+  try {
+    response = await upstreamFetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         model,
         prompt: `${payload.prompt}\n\n画幅比例：${payload.aspectRatio}。`,
@@ -72,8 +74,10 @@ async function generateWithImageStream(
           watermark: false,
         },
       }),
-    }
-  )
+    })
+  } catch (error) {
+    throw new Error(describeUpstreamError(error, endpoint))
+  }
 
   const text = await response.text()
   let parsed: unknown

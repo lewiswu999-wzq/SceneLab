@@ -286,7 +286,7 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
       const next = { ...settings, identities: payload.identities }
       setSettings(next)
       await saveApiSettings(next)
-      toast.success("文字流已完成 API 识别")
+      toast.success("文字流连接成功，已完成 API 识别")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "API 识别失败")
     } finally {
@@ -397,7 +397,7 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
                   disabled={detecting}
                 >
                   {detecting ? <Loader2Icon className="animate-spin" /> : <ScanSearchIcon />}
-                  {detecting ? "识别中" : "让文字流识别"}
+                  {detecting ? "测试中" : "测试连接并识别"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   取消

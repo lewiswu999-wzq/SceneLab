@@ -3,6 +3,11 @@ import {
   joinApiEndpoint,
   type ServerProviderSettings,
 } from "@/lib/server-api-settings"
+import {
+  describeUpstreamError,
+  UpstreamApiError,
+  upstreamFetch,
+} from "@/lib/upstream-fetch"
 import type {
   Character,
   Relationship,
@@ -200,6 +205,7 @@ export async function analyzeTextWithDeepSeek(
     process.env.DEEPSEEK_MODEL ||
     DEFAULT_DEEPSEEK_MODEL
   const apiPath = clientSettings.apiPath || "/chat/completions"
+  const endpoint = joinApiEndpoint(baseUrl, apiPath, "/chat/completions")
 
   if (!apiKey) {
     const analysis = analyzeText(input)
@@ -219,8 +225,8 @@ export async function analyzeTextWithDeepSeek(
   }
 
   try {
-    const response = await fetch(
-      joinApiEndpoint(baseUrl, apiPath, "/chat/completions"),
+    const response = await upstreamFetch(
+      endpoint,
       {
         method: "POST",
         headers: {
@@ -265,21 +271,12 @@ export async function analyzeTextWithDeepSeek(
       source: "text-api" as const,
     }
   } catch (error) {
-    const analysis = analyzeText(input)
-    const fallbackReason = error instanceof Error ? error.message : "Text stream request failed."
-
-    return {
-      analysis: {
-        ...analysis,
-        meta: {
-          ...analysis.meta,
-          provider: "mock",
-          model: "local-mock",
-          fallbackReason,
-        },
-      },
-      source: "mock" as const,
-      fallbackReason,
-    }
+    const message =
+      error instanceof TypeError && error.message === "fetch failed"
+        ? describeUpstreamError(error, endpoint)
+        : error instanceof Error
+          ? error.message
+          : "Text stream request failed."
+    throw new UpstreamApiError(message, { cause: error })
   }
 }
