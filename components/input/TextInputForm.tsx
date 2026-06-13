@@ -98,8 +98,7 @@ export function TextInputForm() {
       })
 
       if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null
-        throw new Error(payload?.error ?? "分析请求失败")
+        throw new Error("文字流 API 调用失败")
       }
 
       const payload = (await response.json()) as {
@@ -123,8 +122,8 @@ export function TextInputForm() {
       }
 
       router.push("/analysis")
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "分析请求失败")
+    } catch {
+      toast.error("文字流 API 调用失败")
     }
   }
 
