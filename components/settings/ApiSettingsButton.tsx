@@ -16,7 +16,8 @@ import {
   XIcon,
 } from "lucide-react"
 import type { ElementType } from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -207,6 +208,7 @@ function StreamFields({
 
 export function ApiSettingsButton({ compact = false, className }: ApiSettingsButtonProps) {
   const [open, setOpen] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
   const [settings, setSettings] = useState<ApiSettings>(defaultApiSettings)
   const [showKey, setShowKey] = useState<Record<ApiStream, boolean>>({
     text: false,
@@ -220,6 +222,9 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
     if (!open) {
       return
     }
+    const frame = window.requestAnimationFrame(() => {
+      contentRef.current?.scrollTo({ top: 0 })
+    })
     let active = true
     Promise.all([loadApiSettings(), Promise.resolve(getApiSettingsStorageLabel())]).then(
       ([stored, label]) => {
@@ -231,6 +236,7 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
     )
     return () => {
       active = false
+      window.cancelAnimationFrame(frame)
     }
   }, [open])
 
@@ -318,7 +324,9 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
         API 接入
       </Button>
 
-      {open ? (
+      {open
+        ? createPortal(
+            (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/72 p-3 backdrop-blur-sm"
           role="presentation"
@@ -332,9 +340,9 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
             role="dialog"
             aria-modal="true"
             aria-labelledby="api-settings-title"
-            className="max-h-[92vh] w-full max-w-3xl overflow-auto rounded-md border border-white/10 bg-[#101315] shadow-2xl"
+            className="flex h-[calc(100dvh-1.5rem)] max-h-[860px] w-full max-w-3xl flex-col overflow-hidden rounded-md border border-white/10 bg-[#101315] shadow-2xl"
           >
-            <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-[#101315]/96 px-5 py-4 backdrop-blur">
+            <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 bg-[#101315] px-5 py-4">
               <div>
                 <h2 id="api-settings-title" className="text-base font-semibold text-zinc-50">
                   API 接入
@@ -355,7 +363,7 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
               </Button>
             </header>
 
-            <div className="px-5">
+            <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">
               {(["text", "image", "video"] as const).map((stream) => (
                 <StreamFields
                   key={stream}
@@ -371,7 +379,7 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
               ))}
             </div>
 
-            <footer className="sticky bottom-0 flex flex-col gap-3 border-t border-white/10 bg-[#101315]/96 px-5 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <footer className="flex shrink-0 flex-col gap-3 border-t border-white/10 bg-[#101315] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <Button
                 type="button"
                 variant="ghost"
@@ -401,7 +409,10 @@ export function ApiSettingsButton({ compact = false, className }: ApiSettingsBut
             </footer>
           </div>
         </div>
-      ) : null}
+            ),
+            document.body
+          )
+        : null}
     </>
   )
 }
