@@ -15,7 +15,7 @@ type ConceptPosterWorkspaceProps = {
 
 export function ConceptPosterWorkspace({ analysis, state, lockedStyle, onChange }: ConceptPosterWorkspaceProps) {
   function addPoster(poster: ConceptPosterResult) {
-    onChange({ ...state, posters: [...state.posters, poster] }, ["generateConceptPoster"])
+    onChange({ ...state, posters: [...state.posters, poster] }, ["生成概念海报"])
   }
 
   function selectPoster(posterId: string) {

@@ -30,6 +30,7 @@ import { LongScriptPanel } from "@/components/agent/LongScriptPanel"
 import { RegenerateFromEditsPanel } from "@/components/agent/RegenerateFromEditsPanel"
 import { RevisionHistoryPanel } from "@/components/agent/RevisionHistoryPanel"
 import { UserEditPanel } from "@/components/agent/UserEditPanel"
+import { SceneLabBrand } from "@/components/brand/SceneLabBrand"
 import { ShotTimelineEditor } from "@/components/timeline/ShotTimelineEditor"
 import { ApiSettingsButton } from "@/components/settings/ApiSettingsButton"
 import { Button } from "@/components/ui/button"
@@ -39,8 +40,13 @@ import { ConceptPosterWorkspace } from "@/components/visual/ConceptPosterWorkspa
 import { StoryboardReelWorkspace } from "@/components/visual/StoryboardReelWorkspace"
 import { StoryboardVariantComparison } from "@/components/visual/StoryboardVariantComparison"
 import { VisualStoryboardPanel } from "@/components/visual/VisualStoryboardPanel"
-import { STORAGE_KEY } from "@/lib/constants"
+import { ACTIVE_PROJECT_KEY, STORAGE_KEY } from "@/lib/constants"
 import { toEditableAgentRunResult } from "@/lib/editable-agent"
+import {
+  getActiveProjectId,
+  saveLocalProject,
+} from "@/lib/local-project-client"
+import { localizeRunLog } from "@/lib/run-log-labels"
 import { sampleAnalysis } from "@/lib/sample-data"
 import { createAgentRunFromAnalysis } from "@/lib/scenelab-agent"
 import type {
@@ -238,6 +244,35 @@ function loadInitialPayload() {
   }
 }
 
+let pendingSave:
+  | { input: TextInput; result: EditableAgentRunResult }
+  | undefined
+let saveTimer: number | undefined
+let saveInFlight = false
+
+async function flushProjectSave() {
+  if (saveInFlight || !pendingSave) return
+  const next = pendingSave
+  pendingSave = undefined
+  saveInFlight = true
+  try {
+    const project = await saveLocalProject({
+      projectId: getActiveProjectId(),
+      input: next.input,
+      analysis: next.result.analysis,
+      agentResult: next.result,
+    })
+    window.localStorage.setItem(ACTIVE_PROJECT_KEY, project.id)
+  } catch {
+    // Keep the in-memory snapshot usable; disk persistence retries on the next edit.
+  } finally {
+    saveInFlight = false
+    if (pendingSave) {
+      saveTimer = window.setTimeout(() => void flushProjectSave(), 250)
+    }
+  }
+}
+
 function persist(input: TextInput | undefined, result: EditableAgentRunResult) {
   window.localStorage.setItem(
     STORAGE_KEY,
@@ -247,6 +282,10 @@ function persist(input: TextInput | undefined, result: EditableAgentRunResult) {
       agentResult: result,
     })
   )
+  if (!input) return
+  pendingSave = { input, result }
+  if (saveTimer) window.clearTimeout(saveTimer)
+  saveTimer = window.setTimeout(() => void flushProjectSave(), 700)
 }
 
 export function AgentWorkspace() {
@@ -262,6 +301,7 @@ export function AgentWorkspace() {
       const initial = loadInitialPayload()
       setInput(initial.input)
       setResult(initial.result)
+      persist(initial.input, initial.result)
     }, 0)
 
     return () => window.clearTimeout(restoreTimer)
@@ -369,7 +409,7 @@ export function AgentWorkspace() {
       ? upsertStoryboardImage(nextBaseState, selectedImage, lockImage)
       : nextBaseState
     handleVisualStateChange(nextVisualState, [
-      selectedImage ? (lockImage ? "selectStoryboardVariant:locked" : "selectStoryboardVariant") : "generateStoryboardVariants",
+      selectedImage ? (lockImage ? "锁定并选用分镜候选版本" : "选用分镜候选版本") : "生成分镜候选版本",
     ])
   }
 
@@ -379,7 +419,7 @@ export function AgentWorkspace() {
         ...visualState,
         characterConsistencyPack: pack,
       },
-      ["buildCharacterConsistencyPrompt"]
+      ["生成人物一致性设定"]
     )
   }
 
@@ -398,16 +438,8 @@ export function AgentWorkspace() {
               >
                 <ArrowLeftIcon />
               </Button>
-              <div className="grid gap-0.5">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-semibold tracking-normal text-zinc-50">
-                    SceneLab
-                  </h1>
-                  <span className="hidden h-4 w-px bg-white/10 sm:block" />
-                  <span className="hidden text-xs text-zinc-500 sm:inline">
-                    视觉制作台
-                  </span>
-                </div>
+              <div className="grid min-w-0 gap-0.5">
+                <SceneLabBrand compact subtitle="视觉制作台" />
                 <p className="line-clamp-1 max-w-3xl text-[11px] text-zinc-600">
                   {result.analysis.overview.summary}
                 </p>
@@ -460,7 +492,7 @@ export function AgentWorkspace() {
                 {result.toolCallLogs.slice(-14).map((log, index) => (
                   <div key={`${log}-${index}`} className="flex gap-2 font-mono text-[10px] leading-5 text-zinc-700">
                     <span className="text-primary/60">{String(index + 1).padStart(2, "0")}</span>
-                    <span className="truncate">{log}</span>
+                    <span className="truncate">{localizeRunLog(log)}</span>
                   </div>
                 ))}
               </div>
@@ -511,7 +543,7 @@ export function AgentWorkspace() {
                         ...visualState,
                         timeline,
                       },
-                      toolCallLogs: [...result.toolCallLogs, "updateStoryboardTimeline"],
+                      toolCallLogs: [...result.toolCallLogs, "更新时间线"],
                     }
                     setResult(nextResult)
                     persist(input, nextResult)

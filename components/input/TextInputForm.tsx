@@ -3,10 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowRightIcon, FlaskConicalIcon, Loader2Icon, RotateCcwIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { ProjectMemoryActions } from "@/components/input/ProjectMemoryActions"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -16,6 +18,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   ANALYSIS_DEPTHS,
@@ -25,6 +28,10 @@ import {
   TEXT_TYPES,
 } from "@/lib/constants"
 import { getApiRequestHeaders } from "@/lib/api-settings"
+import {
+  activateLocalProject,
+  saveLocalProject,
+} from "@/lib/local-project-client"
 import type { SceneAnalysis, TextInput } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -75,6 +82,10 @@ function OptionGroup({ value, onChange, options, compact }: OptionGroupProps) {
 
 export function TextInputForm() {
   const router = useRouter()
+  const [sceneCountMode, setSceneCountMode] = useState<"recommended" | "custom">(
+    "recommended"
+  )
+  const [customSceneCount, setCustomSceneCount] = useState(8)
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: DEFAULT_INPUT,
@@ -83,9 +94,21 @@ export function TextInputForm() {
     control: form.control,
     name: "sourceText",
   })
+  const isLongScript = sourceText.length > 2000
+  const recommendedSceneCount = Math.min(
+    24,
+    Math.max(4, Math.ceil(sourceText.length / 900))
+  )
 
   async function onSubmit(values: FormValues) {
-    const input: TextInput = values
+    const input: TextInput = {
+      ...values,
+      requestedSceneCount: isLongScript
+        ? sceneCountMode === "recommended"
+          ? recommendedSceneCount
+          : customSceneCount
+        : undefined,
+    }
 
     try {
       const response = await fetch("/api/analyze", {
@@ -107,13 +130,18 @@ export function TextInputForm() {
         fallbackReason?: string
       }
 
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          input,
-          analysis: payload.analysis,
-        })
-      )
+      const localPayload = {
+        input,
+        analysis: payload.analysis,
+      }
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(localPayload))
+
+      try {
+        const project = await saveLocalProject(localPayload)
+        activateLocalProject(project)
+      } catch {
+        toast.warning("分析已完成，但本地项目文件暂时保存失败")
+      }
 
       if (payload.source === "text-api") {
         toast.success("文字流分析完成")
@@ -129,6 +157,14 @@ export function TextInputForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-7">
+      <ProjectMemoryActions
+        onTextImported={(text) => {
+          form.setValue("sourceText", text, {
+            shouldDirty: true,
+            shouldValidate: true,
+          })
+        }}
+      />
       <FieldGroup>
         <Field data-invalid={Boolean(form.formState.errors.sourceText)}>
           <div className="flex items-end justify-between gap-3">
@@ -151,6 +187,58 @@ export function TextInputForm() {
           </FieldDescription>
           <FieldError errors={[form.formState.errors.sourceText]} />
         </Field>
+
+        {isLongScript && (
+          <Field>
+            <div className="grid gap-3 rounded-md border border-primary/15 bg-primary/[0.045] p-4">
+              <div>
+                <FieldLabel className="text-zinc-100">长剧本分幕</FieldLabel>
+                <FieldDescription className="mt-1">
+                  根据当前文本长度，建议拆分为 {recommendedSceneCount} 幕。你可以采用推荐值，也可以自行填写。
+                </FieldDescription>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-pressed={sceneCountMode === "recommended"}
+                  onClick={() => setSceneCountMode("recommended")}
+                  className="border-white/10 bg-white/[0.025] aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary"
+                >
+                  采用推荐：{recommendedSceneCount} 幕
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-pressed={sceneCountMode === "custom"}
+                  onClick={() => setSceneCountMode("custom")}
+                  className="border-white/10 bg-white/[0.025] aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary"
+                >
+                  自定义幕数
+                </Button>
+              </div>
+              {sceneCountMode === "custom" && (
+                <label className="grid max-w-48 gap-1.5">
+                  <span className="text-xs text-zinc-400">幕数（3–40）</span>
+                  <Input
+                    type="number"
+                    min={3}
+                    max={40}
+                    value={customSceneCount}
+                    onChange={(event) =>
+                      setCustomSceneCount(
+                        Math.min(40, Math.max(3, Number(event.target.value) || 3))
+                      )
+                    }
+                    className="border-white/10 bg-black/25"
+                  />
+                </label>
+              )}
+            </div>
+          </Field>
+        )}
 
         <Field>
           <FieldLabel className="text-zinc-100">文本类型</FieldLabel>

@@ -71,7 +71,18 @@ function rhythmType(value: unknown, fallback: RhythmAdvice["rhythmType"]) {
 function normalizeAnalysis(raw: unknown, input: TextInput, provider: string, model: string) {
   const fallback = analyzeText(input)
   const data = raw && typeof raw === "object" ? (raw as Partial<SceneAnalysis>) : {}
-  const scenesSource = Array.isArray(data.scenes) && data.scenes.length >= 4 ? data.scenes : fallback.scenes
+  const rawScenes = Array.isArray(data.scenes) ? data.scenes : []
+  const scenesSource = input.requestedSceneCount
+    ? Array.from(
+        { length: input.requestedSceneCount },
+        (_, index) =>
+          rawScenes[index] ??
+          fallback.scenes[index] ??
+          fallback.scenes[index % fallback.scenes.length]
+      )
+    : rawScenes.length >= 4
+      ? rawScenes
+      : fallback.scenes
   const charactersSource =
     Array.isArray(data.characters) && data.characters.length >= 2 ? data.characters : fallback.characters
   const relationshipsSource =
@@ -242,6 +253,9 @@ export async function analyzeTextWithDeepSeek(
               content: JSON.stringify({
                 task: "分析这段影视文本并返回 SceneAnalysis JSON",
                 input,
+                scene_count_requirement: input.requestedSceneCount
+                  ? `请严格划分为 ${input.requestedSceneCount} 个场景，并让 scenes、rhythm、shotSuggestions 一一对应。`
+                  : "根据叙事结构合理划分场景，至少 4 个。",
               }),
             },
           ],

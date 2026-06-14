@@ -169,6 +169,7 @@ async function requestProviderImage(request: StoryboardImageRequest) {
       stylePreset: request.stylePreset,
       title: request.sceneId,
     }),
+    signal: AbortSignal.timeout(100000),
   })
   const text = await response.text()
   let payload: { imageUrl?: string; error?: string; details?: unknown } = {}

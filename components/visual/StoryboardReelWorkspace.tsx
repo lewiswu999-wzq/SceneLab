@@ -26,7 +26,7 @@ export function StoryboardReelWorkspace({ analysis, state, onChange }: Storyboar
       return
     }
     const reel = buildStoryboardReel(state.timeline, images)
-    onChange({ ...state, reels: [...state.reels, reel] }, ["buildStoryboardReel"])
+    onChange({ ...state, reels: [...state.reels, reel] }, ["生成视觉预演"])
     toast.success("视觉预演已生成")
   }
 
@@ -42,7 +42,7 @@ export function StoryboardReelWorkspace({ analysis, state, onChange }: Storyboar
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-zinc-400">
-            分镜图 {images.length} 张 / Reel {state.reels.length} 个
+            分镜图 {images.length} 张 / 预演 {state.reels.length} 个
           </div>
           <Button onClick={generateReel} className="bg-teal-300 text-zinc-950 hover:bg-teal-200">
             <FilmIcon data-icon="inline-start" />

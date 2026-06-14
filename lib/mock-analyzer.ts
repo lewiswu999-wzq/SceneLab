@@ -51,6 +51,16 @@ function splitText(text: string) {
   ]
 }
 
+function splitTextToCount(text: string, count: number) {
+  const clean = text.trim()
+  if (!clean) return []
+  return Array.from({ length: count }, (_, index) => {
+    const start = Math.floor((index * clean.length) / count)
+    const end = Math.floor(((index + 1) * clean.length) / count)
+    return clean.slice(start, end).trim() || `第 ${index + 1} 幕`
+  })
+}
+
 function extractCharacters(text: string) {
   const normalizeName = (name: string) => {
     const trimmed = name.trim()
@@ -94,7 +104,9 @@ function getTone(input: TextInput) {
 }
 
 function buildScenes(input: TextInput, names: string[]) {
-  const fragments = splitText(input.sourceText)
+  const fragments = input.requestedSceneCount
+    ? splitTextToCount(input.sourceText, input.requestedSceneCount)
+    : splitText(input.sourceText)
   const seed = hashText(input.sourceText + input.style + input.analysisDepth)
   const depthBoost = input.analysisDepth === "详细分析" ? 12 : input.analysisDepth === "快速分析" ? -8 : 0
   const styleWords = STYLE_KEYWORDS[input.style] ?? STYLE_KEYWORDS["现实主义"]

@@ -4,6 +4,8 @@ import { FlameIcon, LockIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import type { TimelineShot } from "@/lib/types"
+import { getVisualImageUrl } from "@/lib/visual-image-url"
+import { getShotSizeLabel, transitionLabels } from "@/lib/visual-labels"
 
 type TimelineShotCardProps = {
   shot: TimelineShot
@@ -38,15 +40,17 @@ export function TimelineShotCard({
       <div className="aspect-video overflow-hidden rounded-md bg-zinc-900">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={imageUrl} alt={shot.title} className="h-full w-full object-cover" />
+          <img src={getVisualImageUrl(imageUrl)} alt={shot.title} className="h-full w-full object-cover" />
         ) : (
-          <div className="grid h-full place-items-center text-xs text-zinc-500">No visual</div>
+          <div className="grid h-full place-items-center text-xs text-zinc-500">暂无画面</div>
         )}
       </div>
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-sm font-medium text-zinc-100">#{shot.order} {shot.title}</div>
-          <div className="mt-1 text-xs text-zinc-500">{shot.durationSeconds}s / {shot.transition}</div>
+          <div className="mt-1 text-xs text-zinc-500">
+            {shot.durationSeconds} 秒 / {transitionLabels[shot.transition]}
+          </div>
         </div>
         <div className="flex gap-1 text-amber-200">
           {shot.isClimax && <FlameIcon className="size-4" />}
@@ -54,7 +58,7 @@ export function TimelineShotCard({
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
-        <span>{shot.shotSize}</span>
+        <span>{getShotSizeLabel(shot.shotSize)}</span>
         <span>{shot.cameraAngle ?? "平视"}</span>
         <span>{shot.cameraMovement}</span>
         <span>情绪 {shot.emotionValue}</span>

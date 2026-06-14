@@ -59,7 +59,7 @@ export function createAgentRunFromAnalysis(
       "生成情绪曲线",
       "生成节奏分析",
       "生成镜头建议",
-      "生成 AIGC Prompt 准备数据",
+      "准备生成式视觉提示词数据",
       "执行自检",
       "输出报告",
       "等待用户反馈",
@@ -342,12 +342,12 @@ export function reviseSceneLabResult(
     toolCallLogs: [
       ...previousResult.toolCallLogs,
       "等待用户反馈",
-      "understandFeedback",
+      "理解用户反馈",
       feedbackUnderstanding,
-      "selectModulesToRevise",
-      "reviseSceneLabResult",
-      "compareRevisionDiff",
-      "runRevisionSelfCritique",
+      "选择需要修订的模块",
+      "修订分析结果",
+      "对比修订前后差异",
+      "执行修订自检",
     ],
     revisionHistory: [...(previousWithHistory.revisionHistory ?? []), revisionRecord],
   }
@@ -401,6 +401,7 @@ function analyzeChunk(chunk: ReturnType<typeof buildChunk>, input: TextInput): C
   const localAnalysis = analyzeText({
     ...input,
     sourceText: chunk.text,
+    requestedSceneCount: undefined,
   })
   const localEmotionPeak = Math.max(...localAnalysis.scenes.map((scene) => scene.emotionValue))
 
@@ -539,15 +540,15 @@ export function runLongScriptSceneLabAgent(
     toolCallLogs: [
       "理解任务",
       "制定分析计划",
-      "detectLongScript",
-      "splitScriptIntoChunks",
-      "analyzeChunk",
-      "mergeChunkAnalyses",
-      "mergeCharacters",
-      "mergeRelationships",
-      "mergeEmotionCurve",
-      "mergeShotSuggestions",
-      "runGlobalSelfCritique",
+      "检测长剧本",
+      "拆分长剧本段落",
+      "逐段分析剧本",
+      "合并分段分析",
+      "合并人物信息",
+      "合并人物关系",
+      "合并情绪曲线",
+      "合并镜头建议",
+      "执行全局自检",
       "输出报告",
     ],
   }

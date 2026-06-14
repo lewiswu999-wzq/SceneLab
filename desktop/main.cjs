@@ -24,6 +24,22 @@ const DEV_URL = process.env.SCENELAB_DEV_URL || "http://localhost:3000"
 let mainWindow
 let serverProcess
 let upstreamProxyServer
+let routeTransitionQueue = Promise.resolve()
+let activeDomesticRequests = 0
+let domesticRestoreMode
+
+const DOMESTIC_API_HOST_SUFFIXES = [
+  "deepseek.com",
+  "volces.com",
+  "volcengineapi.com",
+  "aliyuncs.com",
+  "bigmodel.cn",
+  "moonshot.cn",
+  "minimax.chat",
+  "siliconflow.cn",
+  "stepfun.com",
+  "baidubce.com",
+]
 
 function readWindowsProxyServer() {
   if (process.platform !== "win32") {
@@ -66,6 +82,89 @@ async function configureNetworkSession() {
 
   await session.defaultSession.setProxy({ mode: "system" })
   writeLog("using Windows system network settings for external API requests")
+}
+
+function isDomesticApiHost(hostname) {
+  const normalized = hostname.toLowerCase()
+  return DOMESTIC_API_HOST_SUFFIXES.some(
+    (suffix) => normalized === suffix || normalized.endsWith(`.${suffix}`)
+  )
+}
+
+function withRouteTransition(action) {
+  const next = routeTransitionQueue.then(action, action)
+  routeTransitionQueue = next.catch(() => {})
+  return next
+}
+
+async function clashControllerRequest(pathname, init) {
+  const response = await electronNet.fetch(`http://127.0.0.1:9090${pathname}`, {
+    ...init,
+    bypassCustomProtocolHandlers: true,
+    headers: {
+      "Content-Type": "application/json",
+      ...init?.headers,
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`0dcloud controller returned HTTP ${response.status}`)
+  }
+  return response
+}
+
+async function withDomesticApiRoute(target, request) {
+  if (!isDomesticApiHost(target.hostname)) {
+    return request()
+  }
+
+  await withRouteTransition(async () => {
+    if (activeDomesticRequests === 0) {
+      domesticRestoreMode = undefined
+      try {
+        const configResponse = await clashControllerRequest("/configs")
+        const config = await configResponse.json()
+        if (config.mode === "global") {
+          await clashControllerRequest("/configs", {
+            method: "PATCH",
+            body: JSON.stringify({ mode: "rule" }),
+          })
+          domesticRestoreMode = "global"
+          writeLog(`temporarily using shared rule routing for ${target.hostname}`)
+        }
+      } catch (error) {
+        writeLog(
+          `0dcloud unavailable; using direct connection for ${target.hostname}: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        )
+      }
+    }
+    activeDomesticRequests += 1
+  })
+
+  try {
+    return await request()
+  } finally {
+    await withRouteTransition(async () => {
+      activeDomesticRequests = Math.max(0, activeDomesticRequests - 1)
+      if (activeDomesticRequests === 0 && domesticRestoreMode === "global") {
+        try {
+          await clashControllerRequest("/configs", {
+            method: "PATCH",
+            body: JSON.stringify({ mode: "global" }),
+          })
+          writeLog("restored 0dcloud global routing")
+        } catch (error) {
+          writeLog(
+            `failed to restore 0dcloud routing: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          )
+        }
+        domesticRestoreMode = undefined
+      }
+    })
+  }
 }
 
 function apiSettingsPath() {
@@ -182,22 +281,35 @@ async function startUpstreamProxy() {
         throw new Error("API 转发仅支持 HTTP 或 HTTPS 地址。")
       }
 
-      const upstreamResponse = await electronNet.fetch(target.toString(), {
-        method: String(payload?.method || "GET"),
-        headers:
-          payload?.headers && typeof payload.headers === "object"
-            ? payload.headers
-            : undefined,
-        body: typeof payload?.body === "string" ? payload.body : undefined,
-        redirect: "follow",
+      const upstream = await withDomesticApiRoute(target, async () => {
+        const fetchImplementation = isDomesticApiHost(target.hostname)
+          ? globalThis.fetch
+          : electronNet.fetch
+        const timeoutMs =
+          String(payload?.method || "GET").toUpperCase() === "GET" ? 45000 : 90000
+        const upstreamResponse = await fetchImplementation(target.toString(), {
+          method: String(payload?.method || "GET"),
+          headers:
+            payload?.headers && typeof payload.headers === "object"
+              ? payload.headers
+              : undefined,
+          body: typeof payload?.body === "string" ? payload.body : undefined,
+          redirect: "follow",
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+
+        return {
+          status: upstreamResponse.status,
+          contentType:
+            upstreamResponse.headers.get("content-type") || "application/octet-stream",
+          body: Buffer.from(await upstreamResponse.arrayBuffer()),
+        }
       })
-      const body = Buffer.from(await upstreamResponse.arrayBuffer())
-      response.writeHead(upstreamResponse.status, {
-        "Content-Type":
-          upstreamResponse.headers.get("content-type") || "application/octet-stream",
+      response.writeHead(upstream.status, {
+        "Content-Type": upstream.contentType,
         "Cache-Control": "no-store",
       })
-      response.end(body)
+      response.end(upstream.body)
     } catch (error) {
       const cause =
         error instanceof Error && error.cause && typeof error.cause === "object"
@@ -274,6 +386,8 @@ async function startProductionServer() {
   const upstreamProxy = await startUpstreamProxy()
   const standaloneDirectory = path.join(process.resourcesPath, "standalone")
   const serverPath = path.join(standaloneDirectory, "server.js")
+  const projectsDirectory = path.join(app.getPath("documents"), "SceneLab Projects")
+  fs.mkdirSync(projectsDirectory, { recursive: true })
 
   serverProcess = utilityProcess.fork(serverPath, [], {
     cwd: standaloneDirectory,
@@ -284,6 +398,7 @@ async function startProductionServer() {
       PORT: String(port),
       SCENELAB_UPSTREAM_PROXY_URL: upstreamProxy.url,
       SCENELAB_UPSTREAM_PROXY_TOKEN: upstreamProxy.token,
+      SCENELAB_PROJECTS_DIR: projectsDirectory,
     },
     stdio: "pipe",
     serviceName: "SceneLab Local Server",
@@ -313,7 +428,7 @@ function createWindow(url) {
     backgroundColor: "#080a0b",
     icon: path.join(__dirname, "..", "app", "favicon.ico"),
     show: false,
-    title: "SceneLab",
+    title: "SceneLab Agent",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

@@ -140,7 +140,7 @@ export function applyUserEdit(
     ...next,
     userEdits: [...next.userEdits, record],
     lockedFields: [...nextLockedFields, lockedField],
-    toolCallLogs: [...next.toolCallLogs, "applyUserEdit", `lockField:${lockKey(lockedField)}`],
+    toolCallLogs: [...next.toolCallLogs, "应用用户修改", "锁定用户修改字段"],
   }
 }
 
@@ -342,12 +342,12 @@ export function regenerateFromUserEdits(
     selfCritique,
     toolCallLogs: [
       ...currentResult.toolCallLogs,
-      "detectAffectedModules",
-      "collectLockedFields",
-      "buildRegenerationContext",
-      "regenerateAffectedModules",
-      "mergeWithLockedFields",
-      "runPostRegenerationSelfCritique",
+      "检测受影响模块",
+      "收集用户锁定内容",
+      "整理重生成上下文",
+      "重生成受影响模块",
+      "合并并保留锁定内容",
+      "执行重生成自检",
     ],
   }
   const history = buildRegenerationHistory(currentResult, request, lockedFields, modules, warnings, nextResult)
@@ -362,7 +362,7 @@ export function unlockField(result: EditableAgentRunResult, field: LockedField) 
   return {
     ...result,
     lockedFields: result.lockedFields.filter((item) => lockKey(item) !== lockKey(field)),
-    toolCallLogs: [...result.toolCallLogs, `unlockField:${lockKey(field)}`],
+    toolCallLogs: [...result.toolCallLogs, "解除字段锁定"],
   }
 }
 
@@ -380,7 +380,7 @@ export function restoreUserEdit(result: EditableAgentRunResult, edit: UserEditRe
           }
         : item
     ),
-    toolCallLogs: [...next.toolCallLogs, `restoreUserEdit:${edit.id}`],
+    toolCallLogs: [...next.toolCallLogs, "恢复用户修改"],
   }
 }
 

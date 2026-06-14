@@ -20,6 +20,7 @@ import type {
   PosterType,
   SceneAnalysis,
 } from "@/lib/types"
+import { posterTypeLabels } from "@/lib/visual-labels"
 
 const posterTypes: PosterType[] = ["main-poster", "character-poster", "mood-poster", "vertical-cover", "horizontal-banner"]
 const ratios = ["16:9", "9:16", "1:1", "4:3", "21:9"] as const
@@ -185,7 +186,11 @@ function NativeSelect({ label, value, options, onChange }: { label: string; valu
     <label className="grid gap-1">
       <span className="text-xs text-zinc-400">{label}</span>
       <select value={value} onChange={(event) => onChange(event.target.value)} className="h-8 rounded-lg border border-white/10 bg-zinc-950 px-2 text-sm text-zinc-100">
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {label === "海报类型" ? posterTypeLabels[option as PosterType] : option}
+          </option>
+        ))}
       </select>
     </label>
   )

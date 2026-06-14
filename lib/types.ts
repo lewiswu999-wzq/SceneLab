@@ -3,6 +3,7 @@ export type TextInput = {
   textType: string
   analysisDepth: string
   style: string
+  requestedSceneCount?: number
 }
 
 export type SceneAnalysis = {

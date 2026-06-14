@@ -2,7 +2,7 @@
 
 import { ArrowLeftIcon, BotIcon, FileJsonIcon, FileTextIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useMemo, useSyncExternalStore } from "react"
 import { toast } from "sonner"
 
 import { CharacterPanel } from "@/components/analysis/CharacterPanel"
@@ -13,6 +13,7 @@ import { RelationshipPanel } from "@/components/analysis/RelationshipPanel"
 import { RhythmPanel } from "@/components/analysis/RhythmPanel"
 import { SceneSlicesPanel } from "@/components/analysis/SceneSlicesPanel"
 import { ShotSuggestionPanel } from "@/components/analysis/ShotSuggestionPanel"
+import { SceneLabBrand } from "@/components/brand/SceneLabBrand"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { STORAGE_KEY } from "@/lib/constants"
@@ -30,26 +31,28 @@ function downloadFile(filename: string, content: string, type: string) {
   URL.revokeObjectURL(url)
 }
 
+function subscribeToStoredAnalysis() {
+  return () => undefined
+}
+
 export function AnalysisLayout() {
   const router = useRouter()
-  const [analysis] = useState<SceneAnalysis>(() => {
-    if (typeof window === "undefined") {
-      return sampleAnalysis
-    }
-
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (!stored) {
-      return sampleAnalysis
-    }
-
+  const storedAnalysis = useSyncExternalStore(
+    subscribeToStoredAnalysis,
+    () => window.localStorage.getItem(STORAGE_KEY),
+    () => null
+  )
+  const analysis = useMemo(() => {
     try {
-      const parsed = JSON.parse(stored) as { analysis?: SceneAnalysis }
-      return parsed.analysis ?? sampleAnalysis
+      const parsed = storedAnalysis
+        ? (JSON.parse(storedAnalysis) as { analysis?: SceneAnalysis })
+        : undefined
+      return parsed?.analysis ?? sampleAnalysis
     } catch {
-      window.localStorage.removeItem(STORAGE_KEY)
       return sampleAnalysis
     }
-  })
+  }, [storedAnalysis])
+
   const markdown = useMemo(() => exportAnalysisToMarkdown(analysis), [analysis])
   const json = useMemo(() => exportAnalysisToJSON(analysis), [analysis])
 
@@ -74,6 +77,7 @@ export function AnalysisLayout() {
         <header className="app-titlebar -mx-4 px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <div className="mx-auto flex max-w-[1500px] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-col gap-2">
+              <SceneLabBrand compact subtitle="剧本分析工作区" />
               <Button
                 variant="ghost"
                 size="sm"

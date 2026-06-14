@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { VariantStyleBadge } from "@/components/visual/VariantStyleBadge"
 import { PROMPT_EXPERT_PIPELINE_VERSION } from "@/lib/prompt-expert"
 import { generateStoryboardVariants } from "@/lib/visual-generation"
+import { getVisualImageUrl } from "@/lib/visual-image-url"
 import {
   type AvailableVisualGenerationProvider,
   visualProviderOptions,
@@ -145,7 +146,7 @@ export function StoryboardVariantComparison({
           </select>
           <Button onClick={generate} disabled={loading} className="bg-teal-300 text-zinc-950 hover:bg-teal-200">
             <SparklesIcon data-icon="inline-start" />
-            {loading ? "生成中" : "生成候选版本"}
+            {loading ? "并行生成中（最长约 100 秒）" : "生成候选版本"}
           </Button>
         </div>
         <p className="text-xs text-zinc-500">
@@ -158,7 +159,7 @@ export function StoryboardVariantComparison({
               <Card key={variant.id} className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.025] ring-0">
                 <div className="relative aspect-video">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={variant.image.imageUrl} alt={variant.label} className="h-full w-full object-cover" />
+                  <img src={getVisualImageUrl(variant.image.imageUrl)} alt={variant.label} className="h-full w-full object-cover" />
                   <div className="absolute left-3 top-3"><VariantStyleBadge style={variant.style} /></div>
                 </div>
                 <CardContent className="grid gap-3 p-4">

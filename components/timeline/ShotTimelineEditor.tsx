@@ -109,7 +109,9 @@ export function ShotTimelineEditor({ timeline, images, onChange }: ShotTimelineE
     <Card className="rounded-lg border border-white/10 bg-zinc-950/70 ring-0">
       <CardHeader>
         <CardTitle className="text-zinc-100">镜头时间线</CardTitle>
-        <CardDescription>{timeline.title} / {timeline.shots.length} shots / {timeline.totalDurationSeconds}s</CardDescription>
+        <CardDescription>
+          {timeline.title} / {timeline.shots.length} 个镜头 / {timeline.totalDurationSeconds} 秒
+        </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="grid gap-3">

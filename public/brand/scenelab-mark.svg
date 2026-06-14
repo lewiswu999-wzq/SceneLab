@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">SceneLab Agent</title>
+  <g fill="#11181c">
+    <path d="m35 29 27 4v174l-27 31V29Z" />
+    <path d="m35 29 178 26v27L35 56V29Z" />
+    <path d="m35 211 178-26v27L35 238v-27Z" />
+    <path d="m186 51 27 4v62l-27-4V51Z" />
+    <path d="m186 140 27-4v76l-27 4v-76Z" />
+    <path d="m88 82 91 13v27l-64-9v55l64-9v22l-91 13V82Z" />
+  </g>
+  <circle cx="184" cy="132" r="17" fill="#58e0c2" />
+</svg>

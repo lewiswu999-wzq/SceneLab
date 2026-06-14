@@ -13,6 +13,7 @@ const inputSchema = z.object({
   textType: z.enum(TEXT_TYPES),
   analysisDepth: z.enum(ANALYSIS_DEPTHS),
   style: z.enum(STORY_STYLES),
+  requestedSceneCount: z.number().int().min(3).max(40).optional(),
 })
 
 export async function POST(request: Request) {

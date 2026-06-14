@@ -1,11 +1,11 @@
 import {
   ClapperboardIcon,
-  FileTextIcon,
   ScanSearchIcon,
   SparklesIcon,
   WandSparklesIcon,
 } from "lucide-react"
 
+import { SceneLabBrand } from "@/components/brand/SceneLabBrand"
 import { TextInputForm } from "@/components/input/TextInputForm"
 import { ApiSettingsButton } from "@/components/settings/ApiSettingsButton"
 
@@ -22,13 +22,7 @@ export default function Home() {
       <header className="app-titlebar">
         <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <FileTextIcon className="size-4" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-zinc-50">SceneLab</div>
-              <div className="text-[11px] text-zinc-500">AI PRE-PRODUCTION WORKSPACE</div>
-            </div>
+            <SceneLabBrand compact />
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">

@@ -44,11 +44,11 @@ export function VisualStoryboardPanel({ analysis, state, lockedStyle, onChange }
           }
         : set
     )
-    onChange({ ...state, storyboardVisualSets: nextSets }, patch.isLocked ? ["lockStoryboardImage"] : ["selectStoryboardImage"])
+    onChange({ ...state, storyboardVisualSets: nextSets }, patch.isLocked ? ["锁定分镜图"] : ["选用分镜图"])
   }
 
   function onGenerated(image: StoryboardImageResult) {
-    onChange(appendStoryboardImage(state, image.sceneId, image), ["generateStoryboardImage"])
+    onChange(appendStoryboardImage(state, image.sceneId, image), ["生成分镜图"])
   }
 
   async function exportMarkdown() {
