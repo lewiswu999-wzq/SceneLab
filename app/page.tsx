@@ -1,86 +1,92 @@
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import {
+  ClapperboardIcon,
+  ScanSearchIcon,
+  SparklesIcon,
+  WandSparklesIcon,
+} from "lucide-react"
+
+import { SceneLabBrand } from "@/components/brand/SceneLabBrand"
 import { TextInputForm } from "@/components/input/TextInputForm"
+import { ApiSettingsButton } from "@/components/settings/ApiSettingsButton"
 
 const previewItems = [
-  ["场景切片", "4+ 个可拍摄段落"],
-  ["情绪曲线", "SVG 直观标记峰值"],
-  ["人物关系", "节点与张力标签"],
-  ["镜头建议", "景别、机位、声音、Prompt"],
+  { icon: ScanSearchIcon, title: "剧本分析", description: "结构、冲突、人物与情绪" },
+  { icon: ClapperboardIcon, title: "镜头设计", description: "景别、机位、运动与时间线" },
+  { icon: SparklesIcon, title: "Prompt Expert", description: "融合生成最终视觉 Prompt" },
+  { icon: WandSparklesIcon, title: "视觉生成", description: "分镜、风格版本与概念海报" },
 ]
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(45,212,191,0.10),transparent_34%),linear-gradient(180deg,#09090b_0%,#0d0d10_58%,#080809_100%)] text-zinc-100">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-6 sm:px-8 lg:px-10">
-        <header className="flex flex-col gap-5 border-b border-white/10 pb-6 md:flex-row md:items-end md:justify-between">
-          <div className="flex flex-col gap-3">
-            <h1 className="text-3xl font-semibold tracking-normal text-zinc-50 sm:text-5xl">
-              SceneLab｜剧本显微镜
-            </h1>
-            <p className="max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
-              把故事拆开，看见节奏、情绪、人物和镜头。
-            </p>
+    <main className="min-h-screen bg-background text-foreground">
+      <header className="app-titlebar">
+        <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <SceneLabBrand compact />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-300">
-              Local first
-            </Badge>
-            <Badge variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-300">
-              Mock analyzer
-            </Badge>
-            <Badge variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-300">
-              Open-source vibe
-            </Badge>
+          <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 text-xs text-zinc-500 sm:flex">
+              <span className="size-1.5 rounded-full bg-emerald-400" />
+              本地工作区
+            </div>
+            <ApiSettingsButton compact />
           </div>
-        </header>
+        </div>
+      </header>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-          <Card className="rounded-lg border border-white/10 bg-zinc-950/70 shadow-2xl shadow-black/40 ring-0">
-            <CardHeader className="px-5 pt-5">
-              <CardTitle className="text-lg text-zinc-100">输入文本</CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
+      <div className="mx-auto grid w-full max-w-[1600px] lg:min-h-[calc(100vh-3.5rem)] lg:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="min-w-0 px-4 py-7 sm:px-7 lg:px-10 lg:py-10 xl:px-14">
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-8 flex flex-col gap-3 border-b border-white/10 pb-6">
+              <div className="text-xs font-medium text-primary">新建项目</div>
+              <h1 className="text-2xl font-semibold text-zinc-50 sm:text-3xl">
+                从剧本开始视觉预演
+              </h1>
+              <p className="max-w-2xl text-sm leading-6 text-zinc-400">
+                输入故事文本，SceneLab 会建立可继续编辑的分析、镜头与视觉工作区。
+              </p>
+            </div>
+            <div className="workspace-panel p-4 sm:p-6">
               <TextInputForm />
-            </CardContent>
-          </Card>
-
-          <aside className="flex flex-col gap-4">
-            <Card className="rounded-lg border border-white/10 bg-zinc-950/60 ring-0">
-              <CardHeader>
-                <CardTitle className="text-base text-zinc-100">分析输出</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                {previewItems.map(([title, description], index) => (
-                  <div key={title} className="grid grid-cols-[2.5rem_1fr] gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-md border border-white/10 bg-white/[0.03] font-mono text-xs text-teal-200">
-                      0{index + 1}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-zinc-100">{title}</span>
-                      <span className="text-sm text-zinc-500">{description}</span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-lg border border-white/10 bg-black/35 ring-0">
-              <CardContent className="flex flex-col gap-4 pt-4">
-                <div className="font-mono text-xs uppercase tracking-normal text-zinc-500">
-                  workflow
-                </div>
-                <Separator className="bg-white/10" />
-                <div className="grid gap-3 text-sm text-zinc-400">
-                  <p>1. 输入片段并选择类型、深度、风格。</p>
-                  <p>2. 浏览 dashboard 式结构化分析。</p>
-                  <p>3. 复制完整分析，或导出 Markdown / JSON。</p>
-                </div>
-              </CardContent>
-            </Card>
-          </aside>
+            </div>
+          </div>
         </section>
+
+        <aside className="border-t border-white/10 bg-[#0b0d0e] px-5 py-7 lg:border-l lg:border-t-0 lg:px-6 lg:py-10">
+          <div className="sticky top-24">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-zinc-200">项目流程</h2>
+              <span className="font-mono text-[10px] text-zinc-600">4 STAGES</span>
+            </div>
+            <div className="grid gap-1">
+              {previewItems.map(({ icon: Icon, title, description }, index) => (
+                <div
+                  key={title}
+                  className="group grid min-h-16 grid-cols-[2rem_1fr] items-center gap-3 border-b border-white/[0.07] py-3"
+                >
+                  <div className="flex size-8 items-center justify-center rounded-md border border-white/10 bg-white/[0.025] text-zinc-500 group-hover:text-primary">
+                    <Icon className="size-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-zinc-200">{title}</span>
+                      <span className="font-mono text-[10px] text-zinc-700">
+                        0{index + 1}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">{description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 border-l-2 border-primary/60 pl-3">
+              <div className="text-xs font-medium text-zinc-300">Prompt Expert 已启用</div>
+              <p className="mt-1 text-xs leading-5 text-zinc-600">
+                不同视觉版本会使用独立风格证据生成最终 Prompt。
+              </p>
+            </div>
+          </div>
+        </aside>
       </div>
     </main>
   )

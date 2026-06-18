@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { copyToClipboard } from "@/lib/export"
+import { getVisualImageUrl } from "@/lib/visual-image-url"
 import { getVisualProviderLabel } from "@/lib/visual-providers"
 import type { StoryboardImageResult } from "@/lib/types"
 
@@ -33,7 +34,7 @@ export function StoryboardImageCard({
     <Card className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.025] ring-0">
       <div className="relative aspect-video bg-zinc-900">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image.imageUrl} alt={sceneTitle ?? image.sceneId} className="h-full w-full object-cover" />
+        <img src={getVisualImageUrl(image.imageUrl)} alt={sceneTitle ?? image.sceneId} className="h-full w-full object-cover" />
         <div className="absolute left-3 top-3 flex gap-2">
           {image.isSelected && <StatePill label="已选择" tone="teal" />}
           {image.isLocked && <StatePill label="已锁定" tone="amber" />}

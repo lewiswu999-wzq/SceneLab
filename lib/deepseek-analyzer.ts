@@ -1,6 +1,13 @@
-import OpenAI from "openai"
-
 import { analyzeText } from "@/lib/mock-analyzer"
+import {
+  joinApiEndpoint,
+  type ServerProviderSettings,
+} from "@/lib/server-api-settings"
+import {
+  describeUpstreamError,
+  UpstreamApiError,
+  upstreamFetch,
+} from "@/lib/upstream-fetch"
 import type {
   Character,
   Relationship,
@@ -64,7 +71,18 @@ function rhythmType(value: unknown, fallback: RhythmAdvice["rhythmType"]) {
 function normalizeAnalysis(raw: unknown, input: TextInput, provider: string, model: string) {
   const fallback = analyzeText(input)
   const data = raw && typeof raw === "object" ? (raw as Partial<SceneAnalysis>) : {}
-  const scenesSource = Array.isArray(data.scenes) && data.scenes.length >= 4 ? data.scenes : fallback.scenes
+  const rawScenes = Array.isArray(data.scenes) ? data.scenes : []
+  const scenesSource = input.requestedSceneCount
+    ? Array.from(
+        { length: input.requestedSceneCount },
+        (_, index) =>
+          rawScenes[index] ??
+          fallback.scenes[index] ??
+          fallback.scenes[index % fallback.scenes.length]
+      )
+    : rawScenes.length >= 4
+      ? rawScenes
+      : fallback.scenes
   const charactersSource =
     Array.isArray(data.characters) && data.characters.length >= 2 ? data.characters : fallback.characters
   const relationshipsSource =
@@ -178,15 +196,27 @@ function parseJSONContent(content: string) {
   } catch {
     const match = content.match(/\{[\s\S]*\}/)
     if (!match) {
-      throw new Error("DeepSeek did not return JSON content.")
+      throw new Error("文字流没有返回 JSON 内容。")
     }
     return JSON.parse(match[0])
   }
 }
 
-export async function analyzeTextWithDeepSeek(input: TextInput) {
-  const apiKey = process.env.DEEPSEEK_API_KEY
-  const model = process.env.DEEPSEEK_MODEL || DEFAULT_DEEPSEEK_MODEL
+export async function analyzeTextWithDeepSeek(
+  input: TextInput,
+  clientSettings: ServerProviderSettings = {}
+) {
+  const apiKey = clientSettings.apiKey || process.env.DEEPSEEK_API_KEY
+  const baseUrl =
+    clientSettings.baseUrl ||
+    process.env.DEEPSEEK_BASE_URL ||
+    "https://api.deepseek.com"
+  const model =
+    clientSettings.model ||
+    process.env.DEEPSEEK_MODEL ||
+    DEFAULT_DEEPSEEK_MODEL
+  const apiPath = clientSettings.apiPath || "/chat/completions"
+  const endpoint = joinApiEndpoint(baseUrl, apiPath, "/chat/completions")
 
   if (!apiKey) {
     const analysis = analyzeText(input)
@@ -197,62 +227,70 @@ export async function analyzeTextWithDeepSeek(input: TextInput) {
           ...analysis.meta,
           provider: "mock",
           model: "local-mock",
-          fallbackReason: "Missing DEEPSEEK_API_KEY",
+          fallbackReason: "Missing text stream API key",
         },
       },
       source: "mock" as const,
-      fallbackReason: "Missing DEEPSEEK_API_KEY",
+      fallbackReason: "Missing text stream API key",
     }
   }
 
-  const client = new OpenAI({
-    apiKey,
-    baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
-  })
-
   try {
-    const completion = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: JSON.stringify({
-            task: "分析这段影视文本并返回 SceneAnalysis JSON",
-            input,
-          }),
+    const response = await upstreamFetch(
+      endpoint,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.35,
-      max_tokens: 5000,
-      stream: false,
-    })
-    const content = completion.choices[0]?.message?.content
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: JSON.stringify({
+                task: "分析这段影视文本并返回 SceneAnalysis JSON",
+                input,
+                scene_count_requirement: input.requestedSceneCount
+                  ? `请严格划分为 ${input.requestedSceneCount} 个场景，并让 scenes、rhythm、shotSuggestions 一一对应。`
+                  : "根据叙事结构合理划分场景，至少 4 个。",
+              }),
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.35,
+          max_tokens: 5000,
+          stream: false,
+        }),
+      }
+    )
+    const completion = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+      error?: { message?: string }
+    }
+    if (!response.ok) {
+      throw new Error(
+        completion.error?.message ?? `Text stream returned HTTP ${response.status}.`
+      )
+    }
+    const content = completion.choices?.[0]?.message?.content
     if (!content) {
-      throw new Error("DeepSeek response is empty.")
+      throw new Error("Text stream response is empty.")
     }
 
     return {
-      analysis: normalizeAnalysis(parseJSONContent(content), input, "deepseek", model),
-      source: "deepseek" as const,
+      analysis: normalizeAnalysis(parseJSONContent(content), input, "text-api", model),
+      source: "text-api" as const,
     }
   } catch (error) {
-    const analysis = analyzeText(input)
-    const fallbackReason = error instanceof Error ? error.message : "DeepSeek request failed."
-
-    return {
-      analysis: {
-        ...analysis,
-        meta: {
-          ...analysis.meta,
-          provider: "mock",
-          model: "local-mock",
-          fallbackReason,
-        },
-      },
-      source: "mock" as const,
-      fallbackReason,
-    }
+    const message =
+      error instanceof TypeError && error.message === "fetch failed"
+        ? describeUpstreamError(error, endpoint)
+        : error instanceof Error
+          ? error.message
+          : "Text stream request failed."
+    throw new UpstreamApiError(message, { cause: error })
   }
 }

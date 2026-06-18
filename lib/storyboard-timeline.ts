@@ -32,6 +32,7 @@ export function buildTimelineFromAnalysis(analysis: SceneAnalysis): StoryboardTi
       title: scene.title,
       durationSeconds: scene.rhythmValue >= 75 ? 5 : scene.rhythmValue >= 45 ? 8 : 12,
       shotSize: shot?.shotSize ?? "中景",
+      cameraAngle: shot?.cameraAngle ?? "平视",
       cameraMovement: shot?.cameraMovement ?? "静态观察",
       emotionValue: scene.emotionValue,
       rhythmValue: scene.rhythmValue,
@@ -75,9 +76,6 @@ export function updateTimelineShot(
 ): StoryboardTimeline {
   const shots = timeline.shots.map((shot) => {
     if (shot.id !== shotId) {
-      return shot
-    }
-    if (shot.isLocked && patch.isLocked !== false) {
       return shot
     }
     return {

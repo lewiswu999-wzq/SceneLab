@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { SceneAnalysis, StoryboardImageResult, StoryboardReel } from "@/lib/types"
+import { getVisualImageUrl } from "@/lib/visual-image-url"
 
 type StoryboardReelPlayerProps = {
   reel?: StoryboardReel
@@ -60,15 +61,17 @@ export function StoryboardReelPlayer({ reel, analysis, images }: StoryboardReelP
     <Card className="rounded-lg border border-white/10 bg-zinc-950/70 ring-0">
       <CardHeader>
         <CardTitle className="text-zinc-100">{reel.title}</CardTitle>
-        <CardDescription>{shots.length} shots / {reel.totalDurationSeconds}s / mock storyboard reel</CardDescription>
+        <CardDescription>
+          {shots.length} 个镜头 / {reel.totalDurationSeconds} 秒 / 本地分镜预演
+        </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="relative aspect-video overflow-hidden rounded-lg border border-white/10 bg-zinc-900">
           {image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={image.imageUrl} alt={shot.title} className="h-full w-full object-cover" />
+            <img src={getVisualImageUrl(image.imageUrl)} alt={shot.title} className="h-full w-full object-cover" />
           ) : (
-            <div className="grid h-full place-items-center text-sm text-zinc-500">No storyboard image</div>
+            <div className="grid h-full place-items-center text-sm text-zinc-500">暂无分镜图</div>
           )}
           {captionsEnabled && (
             <div className="absolute inset-x-4 bottom-4 rounded-md bg-black/65 p-3 backdrop-blur">
@@ -80,14 +83,14 @@ export function StoryboardReelPlayer({ reel, analysis, images }: StoryboardReelP
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-2">
-            <Button size="icon-sm" variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-200" onClick={() => setIndex((current) => Math.max(0, current - 1))}>
+            <Button aria-label="上一镜" size="icon-sm" variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-200" onClick={() => setIndex((current) => Math.max(0, current - 1))}>
               <SkipBackIcon />
             </Button>
             <Button size="sm" className="bg-teal-300 text-zinc-950 hover:bg-teal-200" onClick={() => setPlaying((current) => !current)}>
               {playing ? <PauseIcon data-icon="inline-start" /> : <PlayIcon data-icon="inline-start" />}
               {playing ? "暂停" : "播放"}
             </Button>
-            <Button size="icon-sm" variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-200" onClick={() => setIndex((current) => Math.min(shots.length - 1, current + 1))}>
+            <Button aria-label="下一镜" size="icon-sm" variant="outline" className="border-white/10 bg-white/[0.03] text-zinc-200" onClick={() => setIndex((current) => Math.min(shots.length - 1, current + 1))}>
               <SkipForwardIcon />
             </Button>
             <Button size="sm" variant="ghost" className="text-zinc-300" onClick={() => setCaptionsEnabled((current) => !current)}>

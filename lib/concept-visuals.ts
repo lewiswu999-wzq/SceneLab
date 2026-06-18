@@ -8,6 +8,7 @@ import type {
   StoryboardReel,
   StoryboardTimeline,
 } from "@/lib/types"
+import { getApiRequestHeaders } from "@/lib/api-settings"
 
 function dataPoster(title: string, subtitle: string, seed: string, aspectRatio: string) {
   const hash = Array.from(seed).reduce((value, char) => value + char.charCodeAt(0), 0)
@@ -37,6 +38,7 @@ async function requestProviderPoster(request: ConceptPosterRequest) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await getApiRequestHeaders()),
     },
     body: JSON.stringify({
       provider: request.provider,
@@ -68,7 +70,8 @@ export function buildConceptPosterPrompt(
   analysis: SceneAnalysis,
   posterType: PosterType,
   characterProfiles: CharacterVisualProfile[],
-  selectedSceneIds: string[]
+  selectedSceneIds: string[],
+  visualStyle = analysis.meta.style
 ) {
   const selectedScenes = analysis.scenes.filter((scene) => selectedSceneIds.includes(scene.id))
   const scenes = selectedScenes.length > 0 ? selectedScenes : analysis.scenes.slice(0, 3)
@@ -84,6 +87,7 @@ export function buildConceptPosterPrompt(
     `一句话：${analysis.overview.summary}`,
     `主题：${analysis.overview.theme}`,
     `核心冲突：${analysis.overview.coreConflict}`,
+    `全局视觉风格：${visualStyle}`,
     `关键场景：\n${sceneBrief}`,
     `角色一致性：\n${characterBrief || "无角色档案时保持人物身份清晰"}`,
     `视觉关键词：${analysis.overview.visualKeywords.join("、")}`,

@@ -16,15 +16,18 @@ import {
 import type {
   CharacterConsistencyPack,
   ConceptPosterResult,
+  LockedVisualStyle,
   PosterType,
   SceneAnalysis,
 } from "@/lib/types"
+import { posterTypeLabels } from "@/lib/visual-labels"
 
 const posterTypes: PosterType[] = ["main-poster", "character-poster", "mood-poster", "vertical-cover", "horizontal-banner"]
 const ratios = ["16:9", "9:16", "1:1", "4:3", "21:9"] as const
 
 type ConceptPosterGeneratorProps = {
   analysis: SceneAnalysis
+  lockedStyle?: LockedVisualStyle
   consistencyPack?: CharacterConsistencyPack
   existingPosters?: ConceptPosterResult[]
   onGenerated: (poster: ConceptPosterResult) => void
@@ -33,15 +36,16 @@ type ConceptPosterGeneratorProps = {
 
 export function ConceptPosterGenerator({
   analysis,
+  lockedStyle,
   consistencyPack,
   existingPosters = [],
   onGenerated,
   onReuse,
 }: ConceptPosterGeneratorProps) {
   const [posterType, setPosterType] = useState<PosterType>("main-poster")
-  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("jimeng")
+  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("image-api")
   const [aspectRatio, setAspectRatio] = useState<(typeof ratios)[number]>("16:9")
-  const [visualStyle, setVisualStyle] = useState(analysis.meta.style)
+  const [visualStyle, setVisualStyle] = useState(lockedStyle?.label ?? analysis.meta.style)
   const [selectedSceneIds, setSelectedSceneIds] = useState<string[]>(analysis.scenes.slice(0, 2).map((scene) => scene.id))
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>(analysis.characters.slice(0, 3).map((character) => character.id))
   const [customPrompt, setCustomPrompt] = useState("")
@@ -53,9 +57,10 @@ export function ConceptPosterGenerator({
         analysis,
         posterType,
         consistencyPack?.profiles ?? [],
-        selectedSceneIds
+        selectedSceneIds,
+        lockedStyle ? `全局锁定风格：${lockedStyle.label}。参考锁定 prompt：${lockedStyle.prompt}` : visualStyle
       ),
-    [analysis, consistencyPack?.profiles, customPrompt, posterType, selectedSceneIds]
+    [analysis, consistencyPack?.profiles, customPrompt, lockedStyle, posterType, selectedSceneIds, visualStyle]
   )
 
   function toggleScene(sceneId: string) {
@@ -92,7 +97,7 @@ export function ConceptPosterGenerator({
         logline: analysis.overview.summary,
         provider,
         aspectRatio,
-        visualStyle,
+        visualStyle: lockedStyle?.label ?? visualStyle,
         selectedSceneIds,
         selectedCharacterIds,
         prompt,
@@ -114,7 +119,7 @@ export function ConceptPosterGenerator({
           <PaletteIcon />
           概念海报
         </CardTitle>
-        <CardDescription>选择场景与角色，通过已接入的即梦 API 生成海报，或使用不联网的本地 SVG 预览。</CardDescription>
+        <CardDescription>选择场景与角色，通过图像流 API 生成海报，或使用不联网的本地 SVG 预览。</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-3 md:grid-cols-4">
@@ -123,9 +128,19 @@ export function ConceptPosterGenerator({
           <NativeSelect label="画幅" value={aspectRatio} options={[...ratios]} onChange={(value) => setAspectRatio(value as (typeof ratios)[number])} />
           <label className="grid gap-1">
             <span className="text-xs text-zinc-400">视觉风格</span>
-            <input value={visualStyle} onChange={(event) => setVisualStyle(event.target.value)} className="h-8 rounded-lg border border-white/10 bg-zinc-950 px-2 text-sm text-zinc-100" />
+            <input
+              value={lockedStyle?.label ?? visualStyle}
+              disabled={Boolean(lockedStyle)}
+              onChange={(event) => setVisualStyle(event.target.value)}
+              className="h-8 rounded-lg border border-white/10 bg-zinc-950 px-2 text-sm text-zinc-100 disabled:opacity-70"
+            />
           </label>
         </div>
+        {lockedStyle && (
+          <p className="text-xs leading-5 text-teal-100">
+            已跟随多版本比对锁定风格：{lockedStyle.label}
+          </p>
+        )}
         <p className="text-xs text-zinc-500">
           {visualProviderOptions.find((option) => option.value === provider)?.description}
         </p>
@@ -171,7 +186,11 @@ function NativeSelect({ label, value, options, onChange }: { label: string; valu
     <label className="grid gap-1">
       <span className="text-xs text-zinc-400">{label}</span>
       <select value={value} onChange={(event) => onChange(event.target.value)} className="h-8 rounded-lg border border-white/10 bg-zinc-950 px-2 text-sm text-zinc-100">
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {label === "海报类型" ? posterTypeLabels[option as PosterType] : option}
+          </option>
+        ))}
       </select>
     </label>
   )

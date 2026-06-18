@@ -1,8 +1,8 @@
 import type { VisualGenerationProvider } from "@/lib/types"
 
-export const implementedRemoteVisualProviders = ["jimeng"] as const satisfies readonly VisualGenerationProvider[]
+export const implementedRemoteVisualProviders = ["image-api", "jimeng"] as const satisfies readonly VisualGenerationProvider[]
 export const localVisualProviders = ["mock"] as const satisfies readonly VisualGenerationProvider[]
-export const availableVisualGenerationProviders = ["jimeng", "mock"] as const satisfies readonly VisualGenerationProvider[]
+export const availableVisualGenerationProviders = ["image-api", "mock"] as const satisfies readonly VisualGenerationProvider[]
 
 export type AvailableVisualGenerationProvider = (typeof availableVisualGenerationProviders)[number]
 export type ImplementedRemoteVisualProvider = (typeof implementedRemoteVisualProviders)[number]
@@ -13,9 +13,9 @@ type VisualProviderMetadata = {
 }
 
 const visualProviderMetadata: Record<AvailableVisualGenerationProvider, VisualProviderMetadata> = {
-  jimeng: {
-    label: "即梦 API",
-    description: "通过服务端 /api/visual/generate 调用已配置的即梦图像模型。",
+  "image-api": {
+    label: "图像流 API",
+    description: "调用“API 接入”中配置的图像生成通道，不限定供应商。",
   },
   mock: {
     label: "本地 SVG 预览",

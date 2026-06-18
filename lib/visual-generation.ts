@@ -8,6 +8,7 @@ import type {
   StoryboardVariantStyle,
   VisualGenerationProvider,
 } from "@/lib/types"
+import { getApiRequestHeaders } from "@/lib/api-settings"
 import {
   buildSceneStoryboardCraftPrompt,
   buildStoryboardAnnotation,
@@ -159,6 +160,7 @@ async function requestProviderImage(request: StoryboardImageRequest) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await getApiRequestHeaders()),
     },
     body: JSON.stringify({
       provider: request.provider,
@@ -167,6 +169,7 @@ async function requestProviderImage(request: StoryboardImageRequest) {
       stylePreset: request.stylePreset,
       title: request.sceneId,
     }),
+    signal: AbortSignal.timeout(100000),
   })
   const text = await response.text()
   let payload: { imageUrl?: string; error?: string; details?: unknown } = {}
@@ -302,14 +305,12 @@ export async function generateStoryboardVariants(
   const picked = variantStyles.slice(0, Math.max(1, Math.min(count, variantStyles.length)))
   const variants = await Promise.all(
     picked.map(async (styleMeta) => {
-      const storyboardPrompt = buildStoryboardImagePrompt(scene, shotSuggestion, characters, styleMeta.label, provider)
       const promptExpert = buildPromptExpertFusion({
         scene,
         shot: shotSuggestion,
         characters,
         style: styleMeta.style,
         aspectRatio: "16:9",
-        upstreamStoryboardPrompt: storyboardPrompt,
       })
       const prompt = promptExpert.finalPrompt
       const request: StoryboardImageRequest = {

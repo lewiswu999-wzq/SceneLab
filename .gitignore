@@ -19,6 +19,10 @@
 
 # production
 /build
+/dist-desktop/
+/release-desktop/
+/desktop-build.log
+/desktop-build.pid
 
 # misc
 .DS_Store
@@ -30,8 +34,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
+
+# generated creative artifacts
+/outputs/
 
 # vercel
 .vercel

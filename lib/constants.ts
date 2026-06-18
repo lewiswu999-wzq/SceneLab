@@ -1,4 +1,5 @@
 export const STORAGE_KEY = "scenelab.analysis.v1"
+export const ACTIVE_PROJECT_KEY = "scenelab.project.active.v1"
 
 export const TEXT_TYPES = [
   "小说片段",

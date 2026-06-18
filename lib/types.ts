@@ -3,6 +3,7 @@ export type TextInput = {
   textType: string
   analysisDepth: string
   style: string
+  requestedSceneCount?: number
 }
 
 export type SceneAnalysis = {
@@ -188,6 +189,7 @@ export type EditableAgentRunResult = RevisedAgentRunResult & {
 
 export type VisualGenerationProvider =
   | "mock"
+  | "image-api"
   | "jimeng"
   | "image2"
   | "kling"
@@ -258,6 +260,7 @@ export type StoryboardVariant = {
 }
 
 export type PromptExpertFusion = {
+  pipelineVersion?: string
   storyboardPrompt: string
   stylePrompt: string
   finalPrompt: string
@@ -270,6 +273,16 @@ export type StoryboardComparisonSet = {
   variants: StoryboardVariant[]
   selectedVariantId?: string
   createdAt: string
+}
+
+export type LockedVisualStyle = {
+  style: StoryboardVariantStyle
+  label: string
+  sceneId: string
+  variantId: string
+  imageId: string
+  prompt: string
+  updatedAt: string
 }
 
 export type CharacterVisualProfile = {
@@ -304,6 +317,7 @@ export type TimelineShot = {
   title: string
   durationSeconds: number
   shotSize: string
+  cameraAngle?: string
   cameraMovement: string
   emotionValue: number
   rhythmValue: number
@@ -369,6 +383,7 @@ export type StoryboardReel = {
 export type VisualAgentState = {
   storyboardVisualSets: StoryboardVisualSet[]
   storyboardComparisonSets: StoryboardComparisonSet[]
+  lockedStyle?: LockedVisualStyle
   characterConsistencyPack?: CharacterConsistencyPack
   timeline?: StoryboardTimeline
   posters: ConceptPosterResult[]

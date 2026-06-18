@@ -10,16 +10,17 @@ import { StoryboardGallery } from "@/components/visual/StoryboardGallery"
 import { StoryboardImageGenerator } from "@/components/visual/StoryboardImageGenerator"
 import { copyToClipboard, exportVisualStoryboardToJSON, exportVisualStoryboardToMarkdown } from "@/lib/export"
 import { buildSceneContinuityCue, SCENELAB_CONTINUITY_GUIDE } from "@/lib/scenelab-storyboard-craft"
-import type { SceneAnalysis, StoryboardImageResult, VisualAgentState } from "@/lib/types"
+import type { LockedVisualStyle, SceneAnalysis, StoryboardImageResult, VisualAgentState } from "@/lib/types"
 import { appendStoryboardImage } from "@/lib/visual-agent-state"
 
 type VisualStoryboardPanelProps = {
   analysis: SceneAnalysis
   state: VisualAgentState
+  lockedStyle?: LockedVisualStyle
   onChange: (state: VisualAgentState, logs?: string[]) => void
 }
 
-export function VisualStoryboardPanel({ analysis, state, onChange }: VisualStoryboardPanelProps) {
+export function VisualStoryboardPanel({ analysis, state, lockedStyle, onChange }: VisualStoryboardPanelProps) {
   const [sceneId, setSceneId] = useState(analysis.scenes[0]?.id ?? "")
   const currentScene = analysis.scenes.find((scene) => scene.id === sceneId) ?? analysis.scenes[0]
   const currentShot = analysis.shotSuggestions.find((shot) => shot.sceneId === currentScene.id) ?? analysis.shotSuggestions[0]
@@ -43,11 +44,11 @@ export function VisualStoryboardPanel({ analysis, state, onChange }: VisualStory
           }
         : set
     )
-    onChange({ ...state, storyboardVisualSets: nextSets }, patch.isLocked ? ["lockStoryboardImage"] : ["selectStoryboardImage"])
+    onChange({ ...state, storyboardVisualSets: nextSets }, patch.isLocked ? ["锁定分镜图"] : ["选用分镜图"])
   }
 
   function onGenerated(image: StoryboardImageResult) {
-    onChange(appendStoryboardImage(state, image.sceneId, image), ["generateStoryboardImage"])
+    onChange(appendStoryboardImage(state, image.sceneId, image), ["生成分镜图"])
   }
 
   async function exportMarkdown() {
@@ -115,6 +116,7 @@ export function VisualStoryboardPanel({ analysis, state, onChange }: VisualStory
       <StoryboardImageGenerator
         analysis={analysis}
         sceneId={sceneId}
+        lockedStyle={lockedStyle}
         consistencyPack={state.characterConsistencyPack}
         existingImages={currentVisualSet?.images ?? []}
         lockedReferenceImageIds={state.storyboardVisualSets.flatMap((set) => set.lockedImageId ? [set.lockedImageId] : [])}

@@ -4,8 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SceneLab｜剧本显微镜",
-  description: "本地运行的影视文本分析与可视化工具。",
+  title: "SceneLab Agent",
+  description: "AI 影视前期制作、剧本分析与视觉分镜工作区。",
 };
 
 export default function RootLayout({

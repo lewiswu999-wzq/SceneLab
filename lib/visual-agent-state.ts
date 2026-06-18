@@ -6,6 +6,7 @@ export function createInitialVisualAgentState(analysis: SceneAnalysis): VisualAg
   return {
     storyboardVisualSets: analysis.scenes.map((scene) => ({ sceneId: scene.id, images: [] })),
     storyboardComparisonSets: [],
+    lockedStyle: undefined,
     characterConsistencyPack: createCharacterConsistencyPack(analysis.characters, analysis.meta.style),
     timeline: buildTimelineFromAnalysis(analysis),
     posters: [],
@@ -21,6 +22,7 @@ export function ensureVisualAgentState(
   return {
     storyboardVisualSets: state?.storyboardVisualSets?.length ? state.storyboardVisualSets : initial.storyboardVisualSets,
     storyboardComparisonSets: state?.storyboardComparisonSets ?? initial.storyboardComparisonSets,
+    lockedStyle: state?.lockedStyle ?? initial.lockedStyle,
     characterConsistencyPack: state?.characterConsistencyPack ?? initial.characterConsistencyPack,
     timeline: state?.timeline ?? initial.timeline,
     posters: state?.posters ?? initial.posters,

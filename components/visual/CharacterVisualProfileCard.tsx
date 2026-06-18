@@ -67,7 +67,9 @@ export function CharacterVisualProfileCard({
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-3 text-base text-zinc-100">
           <span>{profile.name}</span>
-          <span className="rounded border border-white/10 px-2 py-0.5 text-xs text-zinc-500">{profile.lockedFields.length} locked</span>
+          <span className="rounded border border-white/10 px-2 py-0.5 text-xs text-zinc-500">
+            已锁定 {profile.lockedFields.length} 项
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">

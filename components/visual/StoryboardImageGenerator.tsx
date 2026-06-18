@@ -16,6 +16,7 @@ import {
 } from "@/lib/visual-providers"
 import type {
   CharacterConsistencyPack,
+  LockedVisualStyle,
   SceneAnalysis,
   StoryboardImageRequest,
   StoryboardImageResult,
@@ -62,6 +63,7 @@ const statusText = {
 type StoryboardImageGeneratorProps = {
   analysis: SceneAnalysis
   sceneId: string
+  lockedStyle?: LockedVisualStyle
   consistencyPack?: CharacterConsistencyPack
   existingImages?: StoryboardImageResult[]
   lockedReferenceImageIds?: string[]
@@ -72,6 +74,7 @@ type StoryboardImageGeneratorProps = {
 export function StoryboardImageGenerator({
   analysis,
   sceneId,
+  lockedStyle,
   consistencyPack,
   existingImages = [],
   lockedReferenceImageIds = [],
@@ -80,7 +83,7 @@ export function StoryboardImageGenerator({
 }: StoryboardImageGeneratorProps) {
   const scene = analysis.scenes.find((item) => item.id === sceneId) ?? analysis.scenes[0]
   const shot = analysis.shotSuggestions.find((item) => item.sceneId === scene.id) ?? analysis.shotSuggestions[0]
-  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("jimeng")
+  const [provider, setProvider] = useState<AvailableVisualGenerationProvider>("image-api")
   const [aspectRatio, setAspectRatio] = useState<StoryboardImageRequest["aspectRatio"]>("16:9")
   const [promptStyle, setPromptStyle] = useState<PromptStyleOption["value"]>("realistic")
   const [customStyle, setCustomStyle] = useState("")
@@ -89,8 +92,12 @@ export function StoryboardImageGenerator({
   const resolvedPromptStyle =
     promptStyle === "custom" && customStyle.trim()
       ? `自定义视觉风格：${customStyle.trim()}。保持分镜、角色身份和镜头连续性。`
+      : lockedStyle
+        ? `全局锁定风格：${lockedStyle.label}。后续视觉生成必须延续该风格的色彩、光源、镜头、材质和情绪方向；参考锁定 prompt：${lockedStyle.prompt}`
       : selectedPromptStyle.promptStyle
-  const stylePreset = promptStyle === "custom" && customStyle.trim() ? `custom-${customStyle.trim()}` : selectedPromptStyle.stylePreset
+  const stylePreset = promptStyle === "custom" && customStyle.trim()
+    ? `custom-${customStyle.trim()}`
+    : lockedStyle?.style ?? selectedPromptStyle.stylePreset
   const basePrompt = useMemo(() => {
     const characterPrompt = consistencyPack
       ? `\n角色一致性：\n${buildCharacterConsistencyPrompt(consistencyPack.profiles, scene.characters)}`
@@ -176,7 +183,7 @@ export function StoryboardImageGenerator({
           </Field>
         )}
         <p className="text-xs leading-5 text-zinc-500">
-          Prompt 风格：{selectedPromptStyle.description}
+          Prompt 风格：{lockedStyle ? `跟随锁定风格：${lockedStyle.label}` : selectedPromptStyle.description}
         </p>
         <p className="text-xs text-zinc-500">
           {visualProviderOptions.find((option) => option.value === provider)?.description}
